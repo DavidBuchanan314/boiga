@@ -109,6 +109,9 @@ class Sprite():
 	def add_script(self, stack):
 		self.scripts.append(stack)
 	
+	def on_flag(self, stack):
+		self.add_script(ast.on_flag(stack))
+	
 	def proc_def(self, fmt, generator):
 		uid = gen_uid()
 		# TODO: generate proc definition code, add to scripts
