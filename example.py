@@ -7,7 +7,7 @@ cat = project.new_sprite("Sprite1")
 
 my_variable = project.stage.new_var("my variable")
 var_foo = cat.new_var("foo", 123)
-test_list = cat.new_list("test_list", [1, 2, 3, 4])
+test_list = project.stage.new_list("stdout", [1, 2, 3, 4])
 
 cat.on_flag([
 	my_variable <= 5,
@@ -28,9 +28,9 @@ cat.on_flag([
 			var_foo <= 456
 		])
 	]),
-	forever([
-		var_foo <= 123
-	])
+	#forever([
+	#	var_foo <= 123
+	#])
 ])
 
 @cat.proc_def("add [number a] to [number b] if <my condition>")
