@@ -37,8 +37,8 @@ class Expression():
 	def __eq__(self, other):
 		return BinaryOp("==", self, other)
 	
-	#def __ne__(self, other):
-	#	return BinaryOp("!=", self, other)
+	def __ne__(self, other):
+		return BinaryOp("==", self, other).NOT()
 	
 	def __gt__(self, other):
 		return BinaryOp(">", self, other)
@@ -78,6 +78,9 @@ class Expression():
 	
 	def AND(self, other):
 		return BinaryOp("&&", self, other)
+	
+	def NOT(self):
+		return UnaryOp("!", self)
 
 
 class Literal(Expression):
@@ -116,6 +119,9 @@ class UnaryOp(Expression):
 	def __init__(self, op, value):
 		self.op = op
 		self.value = _ensure_expression(value)
+
+		if op == "!":
+			self.type = "bool"
 	
 	def __repr__(self):
 		return f"{self.op}({self.value!r})"
@@ -168,6 +174,17 @@ class Statement():
 		self.op = op
 		self.args = args
 
+class IfStatement(Statement):
+	def __init__(self, condition, then):
+		super().__init__("control_if", CONDITION=_ensure_expression(condition), SUBSTACK=then)
+	
+	def ELSE(self, do):
+		return IfElseStatement(self.args["CONDITION"], self.args["SUBSTACK"], do)
+
+class IfElseStatement(Statement):
+	def __init__(self, condition, then, elsedo):
+		super().__init__("control_if_else", CONDITION=_ensure_expression(condition), SUBSTACK=then, SUBSTACK2=elsedo)
+
 
 def on_flag(substack):
 	return [Statement("event_whenflagclicked")] + substack
@@ -178,11 +195,8 @@ def forever(do):
 def repeatn(times, body):
 	return Statement("control_repeat", TIMES=_ensure_expression(times), SUBSTACK=body)
 
-def iff(condition, then, otherwise=[]):
-	if not otherwise:
-		return Statement("control_if", CONDITION=_ensure_expression(condition), SUBSTACK=then)
-	else:
-		return Statement("control_if_else", CONDITION=_ensure_expression(condition), SUBSTACK=then, SUBSTACK2=otherwise)
+def IF(condition, then):
+	return IfStatement(condition, then)
 
 if __name__ == "__main__":
 	class Sprite():

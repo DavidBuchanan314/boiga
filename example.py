@@ -19,12 +19,12 @@ cat.on_flag([
 	repeatn(12, [
 		var_foo <= var_foo * 2,
 		var_foo <= var_foo * 3,
-		iff((var_foo == 3).OR(Literal(2) == 2), [
+		IF((var_foo == 3).OR(Literal(2) != 2), [
 			var_foo <= 4
 		]),
-		iff(var_foo == 7, [
+		IF(var_foo == 7, [
 			var_foo <= 123
-		],[
+		]).ELSE([
 			var_foo <= 456
 		])
 	]),
