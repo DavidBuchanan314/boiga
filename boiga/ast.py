@@ -1,5 +1,4 @@
 import math
-from typing import BinaryIO
 
 
 def _ensure_expression(value):
@@ -7,6 +6,8 @@ def _ensure_expression(value):
 		return value
 	if type(value) in [str, int, float]:
 		return Literal(value)
+	if type(value) is ProcCall:
+		raise Exception("Scratch procedure calls cannot be used as expressions!")
 	raise Exception(f"Can't interpret {value!r} as Expression")
 
 
@@ -185,15 +186,115 @@ class IfElseStatement(Statement):
 	def __init__(self, condition, then, elsedo):
 		super().__init__("control_if_else", CONDITION=_ensure_expression(condition), SUBSTACK=then, SUBSTACK2=elsedo)
 
+class ProcDef(Statement):
+	def __init__(self, proto):
+		self.op = "procedures_definition"
+		self.proto = proto
+	
+	def __call__(self, *args):
+		if len(args) != len(self.proto.vars):
+			raise Exception(f"{self!r} expects {len(self.proto.vars)} args, {len(args)} given")
+		
+		return ProcCall(self.proto, args)
+	
+	def __repr__(self):
+		return f"ProcDef({self.proto!r})"
+
+class ProcProto(Statement):
+	def __init__(self, sprite, fmt, uid):
+		self.op = "procedures_prototype"
+		self.sprite = sprite
+		self.uid = uid
+		self.fmt = fmt
+
+		# quick and dirty parser state machine
+		# [square] brackets denote numeric/string args, <triangle> brackets denote bool args
+		self.argtypes = []
+		self.proccode = ""
+		self.argnames = []
+		mode = "label"
+		for char in fmt:
+			if mode == "label":
+				if char == "[":
+					self.argtypes.append("generic")
+					self.argnames.append("")
+					self.proccode += "%s"
+					mode = "strarg"
+				elif char == "<":
+					self.argtypes.append("bool")
+					self.argnames.append("")
+					self.proccode += "%b"
+					mode = "boolarg"
+				else:
+					self.proccode += char
+			elif mode == "strarg":
+				if char == "]":
+					mode = "label"
+				else:
+					self.argnames[-1] += char
+			elif mode == "boolarg":
+				if char == ">":
+					mode = "label"
+				else:
+					self.argnames[-1] += char
+			else:
+				raise Exception("Invalid parser state")
+		
+		#print(self.argtypes, self.proccode, self.argnames)
+
+		# NOTE: codegen will initialise self.vars
+		self.vars = []
+	
+	def __repr__(self):
+		return f"ProcProto({self.fmt!r})"
+
+
+class ProcCall(Statement):
+	def __init__(self, proc, args):
+		self.proc = proc
+		args = list(map(_ensure_expression, args))
+
+		for arg, argtype in zip(args, proc.argtypes):
+			if argtype == "bool" and arg.type != "bool":
+				raise Exception("Cannot pass non-boolean expression to boolean proc arg")
+		
+		super().__init__("procedures_call", PROC=proc.uid, ARGS=args)
+
+
+class ProcVar(Expression):
+	def __init__(self, sprite, procproto, name, uid):
+		self.sprite = sprite
+		self.procproto = procproto
+		self.name = name
+		self.uid = uid
+	
+	def __repr__(self):
+		return f"ProcVar({self.procproto.fmt!r}: {self.name})"
+
+class ProcVarBool(Expression):
+	def __init__(self, sprite, procproto, name, uid):
+		self.type = "bool"
+		self.sprite = sprite
+		self.procproto = procproto
+		self.name = name
+		self.uid = uid
+	
+	def __repr__(self):
+		return f"ProcVarBool({self.procproto.fmt!r}: {self.name})"
+
+# user-facing API
 
 def on_flag(substack):
 	return [Statement("event_whenflagclicked")] + substack
 
+
 def forever(do):
 	return Statement("control_forever", SUBSTACK=do)
 
+
 def repeatn(times, body):
 	return Statement("control_repeat", TIMES=_ensure_expression(times), SUBSTACK=body)
+
 
 def IF(condition, then):
 	return IfStatement(condition, then)

@@ -51,7 +51,7 @@ class Project():
 			
 			# TODO: put this behind a debug flag
 			debug_json = json.dumps(project, indent=4)
-			print(debug_json)
+			#print(debug_json)
 			open("DEBUG.json", "w").write(debug_json + "\n")
 
 			with zf.open("project.json", "w") as projfile:
@@ -115,13 +115,26 @@ class Sprite():
 	
 	def on_flag(self, stack):
 		self.add_script(ast.on_flag(stack))
-	
-	def proc_def(self, fmt, generator):
+
+	def proc_def(self, fmt, generator=None):
+		if generator is None: # function decorator hackery
+			return lambda generator: self.proc_def(fmt, generator)
+		
 		uid = gen_uid()
+		proc_proto = ast.ProcProto(self, fmt, uid)
+
+		for varname, vartype in zip(proc_proto.argnames, proc_proto.argtypes):
+			varinit = ast.ProcVarBool if vartype == "bool" else ast.ProcVar
+			proc_proto.vars.append(varinit(self, proc_proto, varname, gen_uid()))
+		
+		procdef = ast.ProcDef(proc_proto)
+
+		self.add_script([procdef] + generator(*proc_proto.vars))
+
 		# TODO: generate proc definition code, add to scripts
 		# we're gonna need some kinda per-sprite proc registry,
 		# to support overwriting existing procs
-		return lambda *args: ast.Statement("proc_call", PROC=uid, ARGS=args)
+		return procdef#lambda *args: ast.Statement("procedures_call", PROC=uid, ARGS=args)
 	
 	def serialise(self):
 		if self.template_json:
@@ -289,6 +302,33 @@ def serialise_statement(blocks_json, sprite, statement):
 				]
 			}
 		}
+	
+	# ======= custom blocks =======
+
+	elif statement.op == "procedures_definition":
+		out = {
+			"opcode": "procedures_definition",
+			"inputs": {
+				"custom_block": serialise_procproto(blocks_json, sprite, statement.proto, uid)
+			}
+		}
+
+	elif statement.op == "procedures_call":
+		inputs = {}
+		for arg in statement.args["ARGS"]:
+			inputs[gen_uid()] = serialise_arg(blocks_json, sprite, arg, uid)
+		out = {
+			"opcode": "procedures_call",
+			"inputs": inputs,
+			"mutation": {
+				"tagName": "mutation",
+				"children": [],
+				"proccode": statement.proc.proccode,
+				"argumentids": json.dumps(list(inputs.keys())),
+				"warp": "true"
+			}
+		}
+
 	else:
 		raise Exception(f"I don't know how to serialise this op: {statement.op!r}")
 	
@@ -318,8 +358,34 @@ def serialise_bool(blocks_json, sprite, expression, parent):
 		raise Exception("Cannot serialise non-bool expression as bool: " + repr(expression))
 	return [2, serialise_expression(blocks_json, sprite, expression, parent)]
 
+def serialise_procproto(blocks_json, sprite, proto, parent):
+	inputs = {}
 
-def serialise_expression(blocks_json, sprite, expression, parent):
+	for var in proto.vars:
+		inputs[gen_uid()] = [1, var.uid]
+		serialise_expression(blocks_json, sprite, var, proto.uid, shadow=True)
+	
+	blocks_json[proto.uid] = {
+		"opcode": "procedures_prototype",
+		"next": None,
+		"parent": parent,
+		"inputs": inputs,
+		"fields": {},
+		"shadow": True,
+		"topLevel": False,
+		"mutation": {
+			"tagName": "mutation",
+			"children": [],
+			"proccode": proto.proccode,
+			"argumentids": json.dumps(list(inputs.keys())),
+			"argumentnames": json.dumps(proto.argnames),
+			"argumentdefaults": json.dumps(["false" if x == "bool" else "" for x in proto.argtypes]),
+			"warp": "true"
+		}
+	}
+	return [1, proto.uid]
+
+def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 	uid = gen_uid()
 	if type(expression) is ast.BinaryOp:
 		opmap = {
@@ -367,4 +433,32 @@ def serialise_expression(blocks_json, sprite, expression, parent):
 			}
 			return uid
 	
+	elif type(expression) is ast.ProcVar:
+		blocks_json[uid] = {
+			"opcode": "argument_reporter_string_number",
+			"next": None,
+			"parent": parent,
+			"inputs": {},
+			"fields": {
+				"VALUE": [expression.name, None]
+			},
+			"shadow": shadow,
+			"topLevel": False
+		}
+		return uid
+	
+	elif type(expression) is ast.ProcVarBool:
+		blocks_json[uid] = {
+			"opcode": "argument_reporter_boolean",
+			"next": None,
+			"parent": parent,
+			"inputs": {},
+			"fields": {
+				"VALUE": [expression.name, None]
+			},
+			"shadow": shadow,
+			"topLevel": False
+		}
+		return uid
+
 	raise Exception(f"Unable to serialise expression of type {type(expression)!r}")
