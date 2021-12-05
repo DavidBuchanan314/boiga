@@ -18,7 +18,15 @@ cat.on_flag([
 	test_list[0] <= "foobar",
 	repeatn(12, [
 		var_foo <= var_foo * 2,
-		var_foo <= var_foo * 3
+		var_foo <= var_foo * 3,
+		iff((var_foo == 3).OR(Literal(2) == 2), [
+			var_foo <= 4
+		]),
+		iff(var_foo == 7, [
+			var_foo <= 123
+		],[
+			var_foo <= 456
+		])
 	]),
 	forever([
 		var_foo <= 123

@@ -1,4 +1,5 @@
 import math
+from typing import BinaryIO
 
 
 def _ensure_expression(value):
@@ -10,6 +11,8 @@ def _ensure_expression(value):
 
 
 class Expression():
+	type = "generic"
+
 	def __init__(self):
 		raise Exception("Expression can't be instantiated directly (Maybe you want a Literal?)")
 	
@@ -69,6 +72,12 @@ class Expression():
 	
 	def simplified(self):
 		return self
+	
+	def OR(self, other):
+		return BinaryOp("||", self, other)
+	
+	def AND(self, other):
+		return BinaryOp("&&", self, other)
 
 
 class Literal(Expression):
@@ -86,6 +95,9 @@ class BinaryOp(Expression):
 		self.op = op
 		self.lval = _ensure_expression(lval)
 		self.rval = _ensure_expression(rval)
+
+		if op in [">", "<", "==", "&&", "||"]:
+			self.type = "bool"
 	
 	def __repr__(self):
 		#return f"BinaryOp({self.op!r}, {self.lval!r}, {self.rval!r})"
@@ -143,7 +155,7 @@ class ListIndex(Expression):
 	
 	def __le__(self, other):
 		other = _ensure_expression(other)
-		return Statement("data_replaceitemoflist", LIST=self.list, INDEX=self.index+1, ITEM=other)
+		return Statement("data_replaceitemoflist", LIST=self.list, INDEX=(self.index+1).simplified(), ITEM=other)
 	
 	def __repr__(self):
 		return f"{self.list!r}[{self.index!r}]"
@@ -170,8 +182,7 @@ def iff(condition, then, otherwise=[]):
 	if not otherwise:
 		return Statement("control_if", CONDITION=_ensure_expression(condition), SUBSTACK=then)
 	else:
-		assert(False) # TODO
-		return Statement("control_ifelse") #XXX: is this the correct name?
+		return Statement("control_if_else", CONDITION=_ensure_expression(condition), SUBSTACK=then, SUBSTACK2=otherwise)
 
 if __name__ == "__main__":
 	class Sprite():

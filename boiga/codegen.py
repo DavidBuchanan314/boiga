@@ -49,7 +49,11 @@ class Project():
 				}
 			}
 			
-			print(json.dumps(project, indent=4))
+			# TODO: put this behind a debug flag
+			debug_json = json.dumps(project, indent=4)
+			print(debug_json)
+			open("DEBUG.json", "w").write(debug_json + "\n")
+
 			with zf.open("project.json", "w") as projfile:
 				projfile.write(json.dumps(project).encode())
 			
@@ -217,12 +221,47 @@ def serialise_statement(blocks_json, sprite, statement):
 		"fields": {}
 	}
 	
+	# ===== EVENTS =======
 	if statement.op == "event_whenflagclicked":
 		out = {
-			"opcode": "event_whenflagclicked",
-			"inputs": {},
-			"fields": {},
+			"opcode": "event_whenflagclicked"
 		}
+	
+	# ===== CONTROL =======
+	elif statement.op == "control_repeat":
+		out = {
+			"opcode": "control_repeat",
+			"inputs": {
+				"TIMES": serialise_arg(blocks_json, sprite, statement.args["TIMES"], uid),
+				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid)
+			}
+		}
+	elif statement.op == "control_forever":
+		out = {
+			"opcode": "control_forever",
+			"inputs": {
+				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid)
+			}
+		}
+	elif statement.op == "control_if":
+		out = {
+			"opcode": "control_if",
+			"inputs": {
+				"CONDITION": serialise_bool(blocks_json, sprite, statement.args["CONDITION"], uid),
+				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid)
+			}
+		}
+	elif statement.op == "control_if_else":
+		out = {
+			"opcode": "control_if_else",
+			"inputs": {
+				"CONDITION": serialise_bool(blocks_json, sprite, statement.args["CONDITION"], uid),
+				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid),
+				"SUBSTACK2": serialise_script(blocks_json, sprite, statement.args["SUBSTACK2"], uid)
+			}
+		}
+	
+	# ===== DATA =======
 	elif statement.op == "data_setvariableto":
 		out = {
 			"opcode": "data_setvariableto",
@@ -250,23 +289,6 @@ def serialise_statement(blocks_json, sprite, statement):
 				]
 			}
 		}
-	elif statement.op == "control_forever":
-		out = {
-			"opcode": "control_forever",
-			"inputs": {
-				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid)
-			},
-			"fields": {}
-		}
-	elif statement.op == "control_repeat":
-		out = {
-			"opcode": "control_repeat",
-			"inputs": {
-				"TIMES": serialise_arg(blocks_json, sprite, statement.args["TIMES"], uid),
-				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid)
-			},
-			"fields": {}
-		}
 	else:
 		raise Exception(f"I don't know how to serialise this op: {statement.op!r}")
 	
@@ -279,7 +301,7 @@ def serialise_statement(blocks_json, sprite, statement):
 
 
 def serialise_arg(blocks_json, sprite, expression, parent):
-	expression = expression.simplified() # experimental!
+	#expression = expression.simplified() # experimental!
 	
 	# primitive expressions https://github.com/LLK/scratch-vm/blob/80e25f7b2a47ec2f3d8bb05fb62c7ceb8a1c99f0/src/serialization/sb3.js#L63
 	if type(expression) is ast.Literal:
@@ -289,6 +311,12 @@ def serialise_arg(blocks_json, sprite, expression, parent):
 	
 	# compound expressions
 	return [3, serialise_expression(blocks_json, sprite, expression, parent), [10, ""]]
+
+
+def serialise_bool(blocks_json, sprite, expression, parent):
+	if expression.type != "bool":
+		raise Exception("Cannot serialise non-bool expression as bool: " + repr(expression))
+	return [2, serialise_expression(blocks_json, sprite, expression, parent)]
 
 
 def serialise_expression(blocks_json, sprite, expression, parent):
@@ -308,14 +336,16 @@ def serialise_expression(blocks_json, sprite, expression, parent):
 			"%": ("operator_mod", "NUM"),
 		}
 		if expression.op in opmap:
-			argname = opmap[expression.op][1]
+			opcode, argname = opmap[expression.op]
+			serialiser = serialise_bool if expression.op in ["&&", "||"] else serialise_arg
+				
 			blocks_json[uid] = {
-				"opcode": opmap[expression.op][0],
+				"opcode": opcode,
 				"next": None,
 				"parent": parent,
 				"inputs": {
-					argname+"1": serialise_arg(blocks_json, sprite, expression.lval, uid),
-					argname+"2": serialise_arg(blocks_json, sprite, expression.rval, uid),
+					argname+"1": serialiser(blocks_json, sprite, expression.lval, uid),
+					argname+"2": serialiser(blocks_json, sprite, expression.rval, uid),
 				},
 				"fields": {},
 				"shadow": False,
