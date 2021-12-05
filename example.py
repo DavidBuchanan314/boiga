@@ -53,7 +53,7 @@ cat.on_flag([
 i = cat.new_var("i")
 cat.on_flag(
 	i[0:100:5] >> [
-		var_foo <= var_foo + i
+		var_foo.changeby(i)
 	]
 )
 

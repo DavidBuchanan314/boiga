@@ -151,6 +151,9 @@ class Var(Expression):
 			raise Exception("You can't index a non-list variable")
 		return VarRangeIterationHack(self, range(_slice.start, _slice.stop, _slice.step))
 
+	def changeby(self, other):
+		return Statement("data_changevariableby", VARIABLE=self, VALUE=_ensure_expression(other))
+
 	def __repr__(self):
 		return f"Var({self.sprite.name}: {self.name})"
 

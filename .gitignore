@@ -130,3 +130,9 @@ dmypy.json
 
 test.sb3
 DEBUG.json
+test_files
+
+# npm noise
+node_modules
+package-lock.json
+package.json
