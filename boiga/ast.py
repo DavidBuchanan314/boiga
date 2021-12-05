@@ -161,11 +161,14 @@ def on_flag(substack):
 	return [Statement("event_whenflagclicked")] + substack
 
 def forever(do):
-	return Statement("control_repeat", SUBSTACK=do)
+	return Statement("control_forever", SUBSTACK=do)
+
+def repeatn(times, body):
+	return Statement("control_repeat", TIMES=_ensure_expression(times), SUBSTACK=body)
 
 def iff(condition, then, otherwise=[]):
 	if not otherwise:
-		return Statement("control_if", CONDITION=condition, SUBSTACK=then)
+		return Statement("control_if", CONDITION=_ensure_expression(condition), SUBSTACK=then)
 	else:
 		assert(False) # TODO
 		return Statement("control_ifelse") #XXX: is this the correct name?

@@ -191,10 +191,11 @@ class Sprite():
 		return sprite
 
 
-def serialise_script(blocks_json, sprite, script):
-	parent = None
+def serialise_script(blocks_json, sprite, script, parent=None):
+	top_uid = None
 	for statement in script:
 		uid = serialise_statement(blocks_json, sprite, statement)
+		top_uid = top_uid or uid
 		blocks_json[uid]["next"] = None
 		if parent:
 			blocks_json[uid]["parent"] = parent
@@ -205,10 +206,16 @@ def serialise_script(blocks_json, sprite, script):
 			blocks_json[uid]["x"] = 0
 			blocks_json[uid]["y"] = 0
 		parent = uid
+	
+	return [2, top_uid]
 
 
 def serialise_statement(blocks_json, sprite, statement):
 	uid = gen_uid()
+	blocks_json[uid] = {
+		"inputs": {},
+		"fields": {}
+	}
 	
 	if statement.op == "event_whenflagclicked":
 		out = {
@@ -243,13 +250,30 @@ def serialise_statement(blocks_json, sprite, statement):
 				]
 			}
 		}
+	elif statement.op == "control_forever":
+		out = {
+			"opcode": "control_forever",
+			"inputs": {
+				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid)
+			},
+			"fields": {}
+		}
+	elif statement.op == "control_repeat":
+		out = {
+			"opcode": "control_repeat",
+			"inputs": {
+				"TIMES": serialise_arg(blocks_json, sprite, statement.args["TIMES"], uid),
+				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid)
+			},
+			"fields": {}
+		}
 	else:
 		raise Exception(f"I don't know how to serialise this op: {statement.op!r}")
 	
 	out["shadow"] = False
 	out["topLevel"] = False
 	
-	blocks_json[uid] = out
+	blocks_json[uid].update(out)
 	
 	return uid
 

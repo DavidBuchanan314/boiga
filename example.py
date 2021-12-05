@@ -1,4 +1,5 @@
 from boiga.codegen import Project
+from boiga.ast import *
 
 project = Project(template="test_files/Scratch Project.sb3")
 
@@ -15,6 +16,13 @@ cat.on_flag([
 ]+[
 	var_foo <= my_variable * 123 + 1337,
 	test_list[0] <= "foobar",
+	repeatn(12, [
+		var_foo <= var_foo * 2,
+		var_foo <= var_foo * 3
+	]),
+	forever([
+		var_foo <= 123
+	])
 ])
 
 add_proc = cat.proc_def("add [number a] to [number b]",
