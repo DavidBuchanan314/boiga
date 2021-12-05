@@ -50,4 +50,11 @@ cat.on_flag([
 	multiply_proc(2, 3)
 ])
 
+i = cat.new_var("i")
+cat.on_flag(
+	i[0:100:5] >> [
+		var_foo <= var_foo + i
+	]
+)
+
 project.save("test.sb3")

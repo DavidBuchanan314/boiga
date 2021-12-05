@@ -288,6 +288,19 @@ def serialise_statement(blocks_json, sprite, statement):
 				]
 			}
 		}
+	elif statement.op == "data_changevariableby":
+		out = {
+			"opcode": "data_changevariableby",
+			"inputs": {
+				"VALUE": serialise_arg(blocks_json, sprite, statement.args["VALUE"], uid)
+			},
+			"fields": {
+				"VARIABLE": [
+					statement.args["VARIABLE"].name,
+					statement.args["VARIABLE"].uid
+				]
+			}
+		}
 	elif statement.op == "data_replaceitemoflist":
 		out = {
 			"opcode": "data_replaceitemoflist",

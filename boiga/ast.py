@@ -136,11 +136,31 @@ class Var(Expression):
 	
 	def __le__(self, other):
 		other = _ensure_expression(other)
+
+		# If other is (self+x) or (x+self), optimise to "change by"
+		if type(other) is BinaryOp and other.op == "+":
+			if other.lval == self:
+				return Statement("data_changevariableby", VARIABLE=self, VALUE=other.rval)
+			elif other.rval == self:
+				return Statement("data_changevariableby", VARIABLE=self, VALUE=other.lval)
+		
 		return Statement("data_setvariableto", VARIABLE=self, VALUE=other)
 	
+	def __getitem__(self, _slice):
+		if type(_slice) is not slice:
+			raise Exception("You can't index a non-list variable")
+		return VarRangeIterationHack(self, range(_slice.start, _slice.stop, _slice.step))
+
 	def __repr__(self):
 		return f"Var({self.sprite.name}: {self.name})"
 
+class VarRangeIterationHack():
+	def __init__(self, var, range):
+		self.var = var
+		self.range = range
+	
+	def __rshift__(self, values):
+		return varloop(self.var, self.range, values)
 
 class List(Expression):
 	def __init__(self, sprite, name, uid):
@@ -298,6 +318,21 @@ def repeatn(times, body):
 
 def IF(condition, then):
 	return IfStatement(condition, then)
+
+# sugar
+
+def varloop(var, _range, body): return [
+	var <= _range.start,
+	repeatn(len(_range),
+		body + 
+		[ var <= var + _range.step ]
+	)
+]
+
+
+
+
+
 
 if __name__ == "__main__":
 	class Sprite():
