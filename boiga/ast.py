@@ -171,8 +171,11 @@ def iff(condition, then, otherwise=[]):
 		return Statement("control_ifelse") #XXX: is this the correct name?
 
 if __name__ == "__main__":
-	print(math.floor((Var("foo") + 7 + 3) * 5) == Literal(3) / 5)
-	print(List("bar")[5])
+	class Sprite():
+		name = "Sprite"
+	s = Sprite()
+	print(math.floor((Var(s, "foo", None) + 7 + 3) * 5) == Literal(3) / 5)
+	print(List(s, "bar", None)[5])
 	print(Literal(3) + 4)
 	print(Literal(123) >> 2)
 	print(Literal(1234123) & 0xFF)
