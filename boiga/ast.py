@@ -171,6 +171,9 @@ class List(Expression):
 		self.name = name
 		self.uid = uid
 	
+	def append(self, other):
+		return Statement("data_addtolist", LIST=self, ITEM=_ensure_expression(other))
+
 	def __repr__(self):
 		return f"Var({self.sprite.name}: {self.name})"
 	

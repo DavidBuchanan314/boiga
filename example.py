@@ -48,7 +48,7 @@ def multiply_proc(locals, number_a, number_b): return [
 cat.on_flag([
 	add_proc(1, Literal(2) + 4, Literal(3) == 3),
 	multiply_proc(2, 3),
-	test_list[1] <= multiply_proc.result
+	test_list.append(multiply_proc.result)
 ])
 
 i = cat.new_var("i")

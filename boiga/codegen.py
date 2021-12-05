@@ -315,6 +315,19 @@ def serialise_statement(blocks_json, sprite, statement):
 				]
 			}
 		}
+	elif statement.op == "data_addtolist":
+		out = {
+			"opcode": "data_addtolist",
+			"inputs": {
+				"ITEM": serialise_arg(blocks_json, sprite, statement.args["ITEM"], uid)
+			},
+			"fields": {
+				"LIST": [
+					statement.args["LIST"].name,
+					statement.args["LIST"].uid
+				]
+			}
+		}
 	
 	# ======= custom blocks =======
 
