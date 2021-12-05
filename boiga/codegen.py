@@ -125,11 +125,11 @@ class Sprite():
 
 		for varname, vartype in zip(proc_proto.argnames, proc_proto.argtypes):
 			varinit = ast.ProcVarBool if vartype == "bool" else ast.ProcVar
-			proc_proto.vars.append(varinit(self, proc_proto, varname, gen_uid()))
+			proc_proto.vars.append(varinit(self, proc_proto, varname, gen_uid(), gen_uid()))
 		
 		procdef = ast.ProcDef(proc_proto)
 
-		self.add_script([procdef] + generator(*proc_proto.vars))
+		self.add_script([procdef] + generator(procdef, *proc_proto.vars))
 
 		# TODO: generate proc definition code, add to scripts
 		# we're gonna need some kinda per-sprite proc registry,
@@ -328,8 +328,8 @@ def serialise_statement(blocks_json, sprite, statement):
 
 	elif statement.op == "procedures_call":
 		inputs = {}
-		for arg in statement.args["ARGS"]:
-			inputs[gen_uid()] = serialise_arg(blocks_json, sprite, arg, uid)
+		for arg, var in zip(statement.args["ARGS"], statement.proc.vars):
+			inputs[var.uid2] = serialise_arg(blocks_json, sprite, arg, uid)
 		out = {
 			"opcode": "procedures_call",
 			"inputs": inputs,
@@ -375,7 +375,7 @@ def serialise_procproto(blocks_json, sprite, proto, parent):
 	inputs = {}
 
 	for var in proto.vars:
-		inputs[gen_uid()] = [1, var.uid]
+		inputs[var.uid2] = [1, var.uid]
 		serialise_expression(blocks_json, sprite, var, proto.uid, shadow=True)
 	
 	blocks_json[proto.uid] = {

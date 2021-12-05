@@ -34,20 +34,21 @@ cat.on_flag([
 ])
 
 @cat.proc_def("add [number a] to [number b] if <my condition>")
-def add_proc(number_a, number_b, my_cond): return [
+def add_proc(locals, number_a, number_b, my_cond): return [
 	IF(my_cond, [
 		var_foo <= number_a + number_b
 	])
 ]
 
 @cat.proc_def("multiply [number a] with [number b]")
-def multiply_proc(number_a, number_b): return [
-	var_foo <= number_a * number_b
+def multiply_proc(locals, number_a, number_b): return [
+	locals.result <= number_a * number_b
 ]
 
 cat.on_flag([
 	add_proc(1, Literal(2) + 4, Literal(3) == 3),
-	multiply_proc(2, 3)
+	multiply_proc(2, 3),
+	test_list[1] <= multiply_proc.result
 ])
 
 i = cat.new_var("i")

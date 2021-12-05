@@ -220,6 +220,10 @@ class ProcDef(Statement):
 		
 		return ProcCall(self.proto, args)
 	
+	def __getattr__(self, attr):
+		varname = self.proto.fmt + ":" + attr
+		return self.proto.sprite.new_var(varname)
+
 	def __repr__(self):
 		return f"ProcDef({self.proto!r})"
 
@@ -285,22 +289,24 @@ class ProcCall(Statement):
 
 
 class ProcVar(Expression):
-	def __init__(self, sprite, procproto, name, uid):
+	def __init__(self, sprite, procproto, name, uid, uid2):
 		self.sprite = sprite
 		self.procproto = procproto
 		self.name = name
 		self.uid = uid
+		self.uid2 = uid2
 	
 	def __repr__(self):
 		return f"ProcVar({self.procproto.fmt!r}: {self.name})"
 
 class ProcVarBool(Expression):
-	def __init__(self, sprite, procproto, name, uid):
+	def __init__(self, sprite, procproto, name, uid, uid2):
 		self.type = "bool"
 		self.sprite = sprite
 		self.procproto = procproto
 		self.name = name
 		self.uid = uid
+		self.uid2 = uid2
 	
 	def __repr__(self):
 		return f"ProcVarBool({self.procproto.fmt!r}: {self.name})"
