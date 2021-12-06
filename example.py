@@ -45,17 +45,14 @@ def add_proc(locals, number_a, number_b, my_cond): return [
 """
 
 hex_out = cat.new_list("hex_out")
+i = cat.new_var("i")
+tmp = cat.new_var("tmp")
 
 @cat.proc_def("hex decode [hex_in]")
 def hex_decode(locals, hex_in): return [
 	hex_out.delete_all(),
 	locals.i[:hex_in.len():2] >> [
-		hex_out.append(
-			Literal("0x")
-			.join(hex_in[locals.i])
-			.join(hex_in[locals.i+1])
-			 + 0
-		)
+		hex_out.append( Literal("0x").join(hex_in[locals.i]).join(hex_in[locals.i+1]) + 0 )
 	]
 ]
 
@@ -64,20 +61,14 @@ def multiply_proc(locals, number_a, number_b): return [
 	locals.result <= number_a * number_b
 ]
 
-i = cat.new_var("i")
-j = cat.new_var("j")
-tmp = cat.new_var("tmp")
-
 cat.on_flag([
 	stdout.delete_all(),
 	stdout.append("Hello, world!"),
-	#add_proc(1, Literal(2) + 4, Literal(3) == 3),
-	multiply_proc(2, 3),
+	multiply_proc(7, 9),
 	stdout.append(multiply_proc.result),
 	hex_decode("deadbeefcafebabe"),
 	tmp <= "",
 	i[:hex_out.len()] >> [
-		#stdout.append(hex_out[i]),
 		tmp <= tmp.join(hex_out[i]),
 		IF (i != hex_out.len() - 1) [
 			tmp <= tmp.join(", ")

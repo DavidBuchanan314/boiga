@@ -506,6 +506,24 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 			"topLevel": False,
 		}
 		return uid
+	elif type(expression) is ast.ListItemNum:
+		blocks_json[uid] = {
+			"opcode": "data_itemnumoflist",
+			"next": None,
+			"parent": parent,
+			"inputs": {
+				"ITEM": serialise_arg(blocks_json, sprite, expression.item, uid)
+			},
+			"fields": {
+				"LIST": [
+					expression.list.name,
+					expression.list.uid
+				]
+			},
+			"shadow": False,
+			"topLevel": False,
+		}
+		return uid
 	elif type(expression) is ast.UnaryOp:
 		if expression.op == "!":
 			blocks_json[uid] = {
@@ -529,6 +547,21 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 					"STRING": serialise_arg(blocks_json, sprite, expression.value, uid),
 				},
 				"fields": {},
+				"shadow": False,
+				"topLevel": False,
+			}
+			return uid
+		elif expression.op == "floor":
+			blocks_json[uid] = {
+				"opcode": "operator_mathop",
+				"next": None,
+				"parent": parent,
+				"inputs": {
+					"NUM": serialise_arg(blocks_json, sprite, expression.value, uid),
+				},
+				"fields": {
+					"OPERATOR": ["floor", None]
+				},
 				"shadow": False,
 				"topLevel": False,
 			}
@@ -575,4 +608,4 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 		}
 		return uid
 
-	raise Exception(f"Unable to serialise expression of type {type(expression)!r}")
+	raise Exception(f"Unable to serialise expression {expression!r}")

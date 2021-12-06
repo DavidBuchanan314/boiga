@@ -117,7 +117,15 @@ class BinaryOp(Expression):
 		self.rval = self.rval.simplified()
 		if type(self.lval) is Literal and type(self.rval) is Literal:
 			if self.op in ["+", "-", "+", "-", "%"] and type(self.lval.value) == type(self.rval.value):
+				#print("simplifying")
 				return Literal(eval(f"{self.lval.value!r} {self.op} {self.rval.value!r}"))
+		
+		# special case: chained addition
+		# TODO: some nicer way to express this?
+		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "+" and type(self.lval.rval) is Literal:
+			#print("simplifying")
+			return BinaryOp("+", self.lval.lval, self.rval.value + self.lval.rval.value)
+		
 		return self
 
 
@@ -144,16 +152,18 @@ class Var(Expression):
 
 		# If other is (self+x) or (x+self), optimise to "change by"
 		if type(other) is BinaryOp and other.op == "+":
-			if other.lval == self:
+			#print(repr(other))
+			if other.lval is self:
 				return Statement("data_changevariableby", VARIABLE=self, VALUE=other.rval)
-			elif other.rval == self:
+			elif other.rval is self:
 				return Statement("data_changevariableby", VARIABLE=self, VALUE=other.lval)
 		
 		return Statement("data_setvariableto", VARIABLE=self, VALUE=other)
 	
 	def __getitem__(self, _slice):
 		if type(_slice) is not slice:
-			raise Exception("You can't index a non-list variable")
+			#raise Exception("You can't index a non-list variable")
+			return super().__getitem__(_slice)
 
 		return VarRangeIterationHack(self, _slice.start, _slice.stop, _slice.step)
 
@@ -190,6 +200,9 @@ class List(Expression):
 	
 	def len(self):
 		return UnaryOp("listlen", self)
+	
+	def index(self, other):
+		return ListItemNum(self, other) - 1
 
 	def __repr__(self):
 		return f"Var({self.sprite.name}: {self.name})"
@@ -197,6 +210,10 @@ class List(Expression):
 	def __getitem__(self, index):
 		return ListIndex(self, (_ensure_expression(index)+1).simplified())
 
+class ListItemNum(Expression):
+	def __init__(self, list_, item):
+		self.list = list_
+		self.item = _ensure_expression(item)
 
 class ListIndex(Expression):
 	def __init__(self, list_, index):
