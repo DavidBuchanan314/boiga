@@ -16,6 +16,8 @@ T1 = cat.new_var("T1")
 T2 = cat.new_var("T2")
 W = cat.new_list("W")
 ASCII = cat.new_list("ASCII", ([""]*32 + [chr(x) for x in range(32, 127)])[::-1])
+XOR_LUT = cat.new_list("XOR_LUT", [a^b for a in range(0x100) for b in range(0x100)])
+AND_LUT = cat.new_list("AND_LUT", [a&b for a in range(0x100) for b in range(0x100)])
 
 K = cat.new_list("K", [
 	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -48,16 +50,30 @@ def shr(x, n):
 def bitneg(x):
 	return (Literal(-1) - x) & 0xffffffff
 
+"""
 def bitxor(a, b, nbits=32):
 	result = (a + b) & 1
 	for i in range(1, nbits):
 		result += (((a>>i)+(b>>i))&1) << i
 	return result
+"""
+def bitxor(a, b, nbits=32):
+	result = XOR_LUT[(a&0xff)*256+(b&0xff)]
+	for i in range(8, nbits, 8):
+		result += XOR_LUT[((a>>i)&0xff)*256+((b>>i)&0xff)] << i
+	return result
 
+"""
 def bitand(a, b, nbits=32):
 	result = (a&1) * (b&1)
 	for i in range(1, nbits):
 		result += ((((a>>i)&1)*((b>>i)&1))) << i
+	return result
+"""
+def bitand(a, b, nbits=32):
+	result = AND_LUT[(a&0xff)*256+(b&0xff)]
+	for i in range(8, nbits, 8):
+		result += AND_LUT[((a>>i)&0xff)*256+((b>>i)&0xff)] << i
 	return result
 
 # Section 4.1.2 (4.2)

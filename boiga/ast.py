@@ -126,6 +126,10 @@ class BinaryOp(Expression):
 			#print("simplifying")
 			return BinaryOp("+", self.lval.lval, self.rval.value + self.lval.rval.value)
 		
+		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "-" and type(self.lval.rval) is Literal:
+			#print("simplifying")
+			return BinaryOp("+", self.lval.lval, self.rval.value - self.lval.rval.value)
+
 		return self
 
 
