@@ -68,6 +68,12 @@ class Expression():
 			raise Exception("AND can only be used to mask off low bits, for now")
 		return self % (other + 1)
 	
+	def __getitem__(self, other):
+		return BinaryOp("[]", _ensure_expression(other+1).simplified(), self)
+
+	def len(self):
+		return UnaryOp("len", self)
+
 	def join(self, other):
 		return BinaryOp("join", self, other)
 	
@@ -104,8 +110,7 @@ class BinaryOp(Expression):
 			self.type = "bool"
 	
 	def __repr__(self):
-		#return f"BinaryOp({self.op!r}, {self.lval!r}, {self.rval!r})"
-		return f"({self.lval!r} {self.op} {self.rval!r})"
+		return f"BinaryOpExpression({self.lval!r} {self.op} {self.rval!r})"
 	
 	def simplified(self):
 		self.lval = self.lval.simplified()
@@ -125,7 +130,7 @@ class UnaryOp(Expression):
 			self.type = "bool"
 	
 	def __repr__(self):
-		return f"{self.op}({self.value!r})"
+		return f"UnaryOpExpression({self.op}({self.value!r}))"
 
 
 class Var(Expression):
@@ -149,7 +154,8 @@ class Var(Expression):
 	def __getitem__(self, _slice):
 		if type(_slice) is not slice:
 			raise Exception("You can't index a non-list variable")
-		return VarRangeIterationHack(self, range(_slice.start, _slice.stop, _slice.step))
+
+		return VarRangeIterationHack(self, _slice.start, _slice.stop, _slice.step)
 
 	def changeby(self, other):
 		return Statement("data_changevariableby", VARIABLE=self, VALUE=_ensure_expression(other))
@@ -158,12 +164,17 @@ class Var(Expression):
 		return f"Var({self.sprite.name}: {self.name})"
 
 class VarRangeIterationHack():
-	def __init__(self, var, range):
+	def __init__(self, var, start, stop, step):
 		self.var = var
-		self.range = range
+		self.start = 0 if start is None else start
+		self.stop = stop
+		self.step = 1 if step is None else step
 	
 	def __rshift__(self, values):
-		return varloop(self.var, self.range, values)
+		if type(self.start) is int and type(self.stop) is int and type(self.step) is int:
+			return varloop(self.var, range(self.start, self.stop, self.step), values)
+		else:
+			return condvarloop(self.var, self.start, self.stop, self.step, values)
 
 class List(Expression):
 	def __init__(self, sprite, name, uid):
@@ -174,11 +185,17 @@ class List(Expression):
 	def append(self, other):
 		return Statement("data_addtolist", LIST=self, ITEM=_ensure_expression(other))
 
+	def delete_all(self):
+		return Statement("data_deletealloflist", LIST=self)
+	
+	def len(self):
+		return UnaryOp("listlen", self)
+
 	def __repr__(self):
 		return f"Var({self.sprite.name}: {self.name})"
 	
 	def __getitem__(self, index):
-		return ListIndex(self, index)
+		return ListIndex(self, (_ensure_expression(index)+1).simplified())
 
 
 class ListIndex(Expression):
@@ -188,7 +205,7 @@ class ListIndex(Expression):
 	
 	def __le__(self, other):
 		other = _ensure_expression(other)
-		return Statement("data_replaceitemoflist", LIST=self.list, INDEX=(self.index+1).simplified(), ITEM=other)
+		return Statement("data_replaceitemoflist", LIST=self.list, INDEX=self.index, ITEM=other)
 	
 	def __repr__(self):
 		return f"{self.list!r}[{self.index!r}]"
@@ -200,6 +217,9 @@ class Statement():
 	def __init__(self, op, **args):
 		self.op = op
 		self.args = args
+	
+	def __repr__(self):
+		return f"Statement({self.op}, {self.args!r})"
 
 class IfStatement(Statement):
 	def __init__(self, condition, then):
@@ -327,9 +347,22 @@ def forever(do):
 def repeatn(times, body):
 	return Statement("control_repeat", TIMES=_ensure_expression(times), SUBSTACK=body)
 
+def repeatuntil(cond, body):
+	return Statement("control_repeat_until", CONDITION=_ensure_expression(cond), SUBSTACK=body)
 
-def IF(condition, then):
+def IF(condition, then=None):
+	if then is None:
+		return IfStatementHack(condition)
 	return IfStatement(condition, then)
+
+class IfStatementHack():
+	def __init__(self, condition):
+		self.condition = condition
+
+	def __getitem__(self, then):
+		if type(then) != tuple:
+			then = [then]
+		return IfStatement(self.condition, list(then))
 
 # sugar
 
@@ -341,6 +374,14 @@ def varloop(var, _range, body): return [
 	)
 ]
 
+# when number of iterations not known at compile-time
+def condvarloop(var, start, stop, step, body): return [
+	var <= start,
+	repeatuntil((var + 1).simplified() > stop,
+		body +
+		[var.changeby(step)]
+	)
+]
 
 
 

@@ -7,15 +7,16 @@ cat = project.new_sprite("Sprite1")
 
 my_variable = project.stage.new_var("my variable")
 var_foo = cat.new_var("foo", 123)
-test_list = project.stage.new_list("stdout", [1, 2, 3, 4])
+stdout = project.stage.new_list("stdout", [])
 
+"""
 cat.on_flag([
 	my_variable <= 5,
 ]+[
 	my_variable <= my_variable + my_variable for _ in range(5)
 ]+[
 	var_foo <= my_variable * 123 + 1337,
-	test_list[0] <= "foobar",
+	stdout[0] <= "foobar",
 	repeatn(12, [
 		var_foo <= var_foo * 2,
 		var_foo <= var_foo * 3,
@@ -32,12 +33,30 @@ cat.on_flag([
 	#	var_foo <= 123
 	#])
 ])
+"""
 
+""""
 @cat.proc_def("add [number a] to [number b] if <my condition>")
 def add_proc(locals, number_a, number_b, my_cond): return [
 	IF(my_cond, [
 		var_foo <= number_a + number_b
 	])
+]
+"""
+
+hex_out = cat.new_list("hex_out")
+
+@cat.proc_def("hex decode [hex_in]")
+def hex_decode(locals, hex_in): return [
+	hex_out.delete_all(),
+	locals.i[:hex_in.len():2] >> [
+		hex_out.append(
+			Literal("0x")
+			.join(hex_in[locals.i])
+			.join(hex_in[locals.i+1])
+			 + 0
+		)
+	]
 ]
 
 @cat.proc_def("multiply [number a] with [number b]")
@@ -45,17 +64,35 @@ def multiply_proc(locals, number_a, number_b): return [
 	locals.result <= number_a * number_b
 ]
 
+i = cat.new_var("i")
+j = cat.new_var("j")
+tmp = cat.new_var("tmp")
+
 cat.on_flag([
-	add_proc(1, Literal(2) + 4, Literal(3) == 3),
+	stdout.delete_all(),
+	stdout.append("Hello, world!"),
+	#add_proc(1, Literal(2) + 4, Literal(3) == 3),
 	multiply_proc(2, 3),
-	test_list.append(multiply_proc.result)
+	stdout.append(multiply_proc.result),
+	hex_decode("deadbeefcafebabe"),
+	tmp <= "",
+	i[:hex_out.len()] >> [
+		#stdout.append(hex_out[i]),
+		tmp <= tmp.join(hex_out[i]),
+		IF (i != hex_out.len() - 1) [
+			tmp <= tmp.join(", ")
+		]
+	],
+	stdout.append(tmp)
 ])
 
-i = cat.new_var("i")
+
+"""
 cat.on_flag(
 	i[0:100:5] >> [
 		var_foo.changeby(i)
 	]
 )
+"""
 
 project.save("test.sb3")

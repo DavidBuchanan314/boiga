@@ -207,9 +207,17 @@ class Sprite():
 		
 		return sprite
 
+# https://stackoverflow.com/a/12472564
+def flatten(S):
+	if S == []:
+		return S
+	if isinstance(S[0], list):
+		return flatten(S[0]) + flatten(S[1:])
+	return S[:1] + flatten(S[1:])
 
 def serialise_script(blocks_json, sprite, script, parent=None):
 	top_uid = None
+	script = flatten(script)
 	for statement in script:
 		uid = serialise_statement(blocks_json, sprite, statement)
 		top_uid = top_uid or uid
@@ -228,6 +236,13 @@ def serialise_script(blocks_json, sprite, script, parent=None):
 
 
 def serialise_statement(blocks_json, sprite, statement):
+	#if type(statement) is list:
+	#	for substatement in statement:
+	#		uid = serialise_statement(blocks_json, sprite, substatement)
+	#	return uid
+	if not issubclass(type(statement), ast.Statement):
+		raise Exception(f"Cannot serialise {statement!r} as a statement")
+
 	uid = gen_uid()
 	blocks_json[uid] = {
 		"inputs": {},
@@ -246,6 +261,14 @@ def serialise_statement(blocks_json, sprite, statement):
 			"opcode": "control_repeat",
 			"inputs": {
 				"TIMES": serialise_arg(blocks_json, sprite, statement.args["TIMES"], uid),
+				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid)
+			}
+		}
+	elif statement.op == "control_repeat_until":
+		out = {
+			"opcode": "control_repeat_until",
+			"inputs": {
+				"CONDITION": serialise_bool(blocks_json, sprite, statement.args["CONDITION"], uid),
 				"SUBSTACK": serialise_script(blocks_json, sprite, statement.args["SUBSTACK"], uid)
 			}
 		}
@@ -321,6 +344,16 @@ def serialise_statement(blocks_json, sprite, statement):
 			"inputs": {
 				"ITEM": serialise_arg(blocks_json, sprite, statement.args["ITEM"], uid)
 			},
+			"fields": {
+				"LIST": [
+					statement.args["LIST"].name,
+					statement.args["LIST"].uid
+				]
+			}
+		}
+	elif statement.op == "data_deletealloflist":
+		out = {
+			"opcode": "data_deletealloflist",
 			"fields": {
 				"LIST": [
 					statement.args["LIST"].name,
@@ -412,6 +445,9 @@ def serialise_procproto(blocks_json, sprite, proto, parent):
 	return [1, proto.uid]
 
 def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
+	if not issubclass(type(expression), ast.Expression):
+		raise Exception(f"Cannot serialise {expression!r} as a expression")
+	
 	uid = gen_uid()
 	if type(expression) is ast.BinaryOp:
 		opmap = {
@@ -426,24 +462,50 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 			"||": ("operator_or", "OPERAND"),
 			"join": ("operator_join", "STRING"),
 			"%": ("operator_mod", "NUM"),
+			"[]": ("operator_letter_of", "LETTER")
 		}
 		if expression.op in opmap:
 			opcode, argname = opmap[expression.op]
 			serialiser = serialise_bool if expression.op in ["&&", "||"] else serialise_arg
-				
+			
+			an1 = argname+"1"
+			an2 = argname+"2"
+
+			if expression.op == "[]":
+				an1 = "LETTER"
+				an2 = "STRING"
+
 			blocks_json[uid] = {
 				"opcode": opcode,
 				"next": None,
 				"parent": parent,
 				"inputs": {
-					argname+"1": serialiser(blocks_json, sprite, expression.lval, uid),
-					argname+"2": serialiser(blocks_json, sprite, expression.rval, uid),
+					an1: serialiser(blocks_json, sprite, expression.lval, uid),
+					an2: serialiser(blocks_json, sprite, expression.rval, uid),
 				},
 				"fields": {},
 				"shadow": False,
 				"topLevel": False,
 			}
 			return uid
+	elif type(expression) is ast.ListIndex:
+		blocks_json[uid] = {
+			"opcode": "data_itemoflist",
+			"next": None,
+			"parent": parent,
+			"inputs": {
+				"INDEX": serialise_arg(blocks_json, sprite, expression.index, uid)
+			},
+			"fields": {
+				"LIST": [
+					expression.list.name,
+					expression.list.uid
+				]
+			},
+			"shadow": False,
+			"topLevel": False,
+		}
+		return uid
 	elif type(expression) is ast.UnaryOp:
 		if expression.op == "!":
 			blocks_json[uid] = {
@@ -454,6 +516,32 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 					"OPERAND": serialise_bool(blocks_json, sprite, expression.value, uid),
 				},
 				"fields": {},
+				"shadow": False,
+				"topLevel": False,
+			}
+			return uid
+		elif expression.op == "len":
+			blocks_json[uid] = {
+				"opcode": "operator_length",
+				"next": None,
+				"parent": parent,
+				"inputs": {
+					"STRING": serialise_arg(blocks_json, sprite, expression.value, uid),
+				},
+				"fields": {},
+				"shadow": False,
+				"topLevel": False,
+			}
+			return uid
+		elif expression.op == "listlen":
+			blocks_json[uid] = {
+				"opcode": "data_lengthoflist",
+				"next": None,
+				"parent": parent,
+				"inputs": {},
+				"fields": {
+					"LIST": [expression.value.name, expression.value.uid],
+				},
 				"shadow": False,
 				"topLevel": False,
 			}

@@ -7,5 +7,9 @@ Boiga (ab)uses Python's operator overloading, to write Scratch expressions with 
 
 ## Features:
 - Scratch .sb3 code generation. (Status: Prototype)
-- AST optimisation (e.g. constant folding) (Status: Planned)
-- Scratch (subset) interpreter - write test suites for your Scratch code, in Python. (Status: Planned)
+- AST optimisation (e.g. constant folding) (Status: Some very basic optimisations)
+
+## TODO
+- Static allocation of "sub-lists" within lists
+- Dynamic allocation of space within lists (i.e. malloc)?
+- For both of the above, we can pass indices around like pointers
