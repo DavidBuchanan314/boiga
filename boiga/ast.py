@@ -122,10 +122,12 @@ class BinaryOp(Expression):
 		
 		# special case: chained addition
 		# TODO: some nicer way to express this?
+		# ((foo + a) + b)  =>  (foo + a+b)
 		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "+" and type(self.lval.rval) is Literal:
 			#print("simplifying")
 			return BinaryOp("+", self.lval.lval, self.rval.value + self.lval.rval.value)
 		
+		# ((foo - a) + b)  =>  (foo + b-a)
 		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "-" and type(self.lval.rval) is Literal:
 			#print("simplifying")
 			return BinaryOp("+", self.lval.lval, self.rval.value - self.lval.rval.value)
@@ -231,7 +233,9 @@ class ListIndex(Expression):
 	def __repr__(self):
 		return f"{self.list!r}[{self.index!r}]"
 
-
+class DaysSince2k(Expression):
+	def __init__(self):
+		pass
 
 
 class Statement():
@@ -404,7 +408,13 @@ def condvarloop(var, start, stop, step, body): return [
 	)
 ]
 
+def sumchain(arr):
+	result = arr[0]
+	for i in arr[1:]:
+		result += i
+	return result
 
+millis_now = DaysSince2k() * 86400000
 
 
 

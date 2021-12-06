@@ -6,16 +6,16 @@ project = Project(template="test_files/Scratch Project.sb3")
 cat = project.new_sprite("Sprite1")
 
 stdout = project.stage.new_list("stdout", [])
-tmp = cat.new_var("tmp", 123)
-tmp2 = cat.new_var("tmp2", 123)
-tmp3 = cat.new_var("tmp3", 123)
-t = cat.new_var("t", 123)
+tmp = cat.new_var("tmp")
+tmp2 = cat.new_var("tmp2")
+tmp3 = cat.new_var("tmp3")
+t = cat.new_var("t")
 H = cat.new_list("H")
 hex_out = cat.new_list("hex_out")
 T1 = cat.new_var("T1")
 T2 = cat.new_var("T2")
 W = cat.new_list("W")
-ASCII = cat.new_list("ASCII", ([""]*32 + [chr(x) for x in range(32, 127)])[::-1])
+ASCII = cat.new_list("ASCII", [chr(x) for x in range(32, 127)][::-1])
 XOR_LUT = cat.new_list("XOR_LUT", [a^b for a in range(0x100) for b in range(0x100)])
 AND_LUT = cat.new_list("AND_LUT", [a&b for a in range(0x100) for b in range(0x100)])
 
@@ -50,26 +50,12 @@ def shr(x, n):
 def bitneg(x):
 	return (Literal(-1) - x) & 0xffffffff
 
-"""
-def bitxor(a, b, nbits=32):
-	result = (a + b) & 1
-	for i in range(1, nbits):
-		result += (((a>>i)+(b>>i))&1) << i
-	return result
-"""
 def bitxor(a, b, nbits=32):
 	result = XOR_LUT[(a&0xff)*256+(b&0xff)]
 	for i in range(8, nbits, 8):
 		result += XOR_LUT[((a>>i)&0xff)*256+((b>>i)&0xff)] << i
 	return result
 
-"""
-def bitand(a, b, nbits=32):
-	result = (a&1) * (b&1)
-	for i in range(1, nbits):
-		result += ((((a>>i)&1)*((b>>i)&1))) << i
-	return result
-"""
 def bitand(a, b, nbits=32):
 	result = AND_LUT[(a&0xff)*256+(b&0xff)]
 	for i in range(8, nbits, 8):
@@ -168,7 +154,7 @@ def sha256(locals, sha256_in): return [
 	]),
 
 	locals.i[:60:4] >> [
-		W.append(hex_out[locals.i+3] + (hex_out[locals.i+2] << 8) + (hex_out[locals.i+1] << 16) + (hex_out[locals.i] << 24))
+		W.append(hex_out[locals.i + 3] + (hex_out[locals.i + 2] << 8) + (hex_out[locals.i + 1] << 16) + (hex_out[locals.i] << 24))
 	],
 
 	W.append(sha256_in.len() * 8),
@@ -178,10 +164,10 @@ def sha256(locals, sha256_in): return [
 
 	# 1. Prepare the message schedule
 	t[16:64] >> [
-		s1(W[t-2]),
-		tmp3 <= tmp + W[t-7],
-		s0(W[t-15]),
-		tmp3 <= tmp3 + tmp + W[t-16],
+		s1(W[t - 2]),
+		tmp3 <= tmp + W[t - 7],
+		s0(W[t - 15]),
+		tmp3 <= tmp3 + tmp + W[t - 16],
 		W.append(tmp3 & 0xffffffff)
 	],
 
@@ -215,16 +201,26 @@ def sha256(locals, sha256_in): return [
 	# hexlify the output
 	locals.out <= "",
 	t[:8] >> [
-		[
-			locals.out <= locals.out.join(Literal("0123456789abcdef")[(H[t]>>i)&0xf])
-			for i in range(0, 32, 4)[::-1]
-		]
+		locals.out <= locals.out.join(Literal("0123456789abcdef")[(H[t] >> i) & 0xf])
+		for i in range(0, 32, 4)[::-1]
 	]
+]
+
+@cat.proc_def("benchmark_sha256")
+def benchmark_sha256(locals): return [
+	stdout.append("Benchmarking..."),
+	locals.bench_start <= millis_now,
+	locals.i <= 0,
+	repeatuntil((millis_now - locals.bench_start) > 1000, [
+		sha256(Literal("hello").join(locals.i)),
+		locals.i.changeby(1)
+	]),
+	stdout.append(Literal("Benchmarked ").join(locals.i).join("H/s"))
 ]
 
 cat.on_flag([
 	stdout.delete_all(),
-	stdout.append("OUTPUT:"),
+	benchmark_sha256(),
 	sha256("hello"),
 	stdout.append(sha256.out),
 ])

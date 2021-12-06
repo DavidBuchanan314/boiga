@@ -607,5 +607,17 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 			"topLevel": False
 		}
 		return uid
+	
+	elif type(expression) is ast.DaysSince2k:
+		blocks_json[uid] = {
+			"opcode": "sensing_dayssince2000",
+			"next": None,
+			"parent": parent,
+			"inputs": {},
+			"fields": {},
+			"shadow": shadow,
+			"topLevel": False
+		}
+		return uid
 
 	raise Exception(f"Unable to serialise expression {expression!r}")
