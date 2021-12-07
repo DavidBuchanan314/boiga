@@ -211,7 +211,7 @@ class List(Expression):
 		return ListItemNum(self, other) - 1
 
 	def __repr__(self):
-		return f"Var({self.sprite.name}: {self.name})"
+		return f"ListVar({self.sprite.name}: {self.name})"
 	
 	def __getitem__(self, index):
 		return ListIndex(self, (_ensure_expression(index)+1).simplified())
