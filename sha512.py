@@ -280,8 +280,8 @@ def sha512(locals, sha512_in): return [
 	# 4. Calculate the next Hash value
 	[
 		[
-			H[0][i] <= (H[0][i] + Hvars[i][0]) & 0xffffffff,
 			H[1][i] <= (H[1][i] + Hvars[i][1] + ( (H[0][i] + Hvars[i][0]) >> 32 )) & 0xffffffff,
+			H[0][i] <= (H[0][i] + Hvars[i][0]) & 0xffffffff,
 		]
 		for i in range(8)
 	],
