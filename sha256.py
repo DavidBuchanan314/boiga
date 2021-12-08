@@ -149,9 +149,9 @@ def sha256(locals, sha256_in): return [
 	ascii_decode(sha256_in),
 	hex_out.append(0x80),
 
-	repeatuntil(hex_out.len() == 60, [
+	repeatuntil (hex_out.len() == 60) [
 		hex_out.append(0)
-	]),
+	],
 
 	locals.i[:60:4] >> [
 		W.append(hex_out[locals.i + 3] + (hex_out[locals.i + 2] << 8) + (hex_out[locals.i + 1] << 16) + (hex_out[locals.i] << 24))
@@ -211,18 +211,24 @@ def benchmark_sha256(locals): return [
 	stdout.append("Benchmarking..."),
 	locals.bench_start <= millis_now,
 	locals.i <= 0,
-	repeatuntil((millis_now - locals.bench_start) > 1000, [
+	repeatuntil ((millis_now - locals.bench_start) > 1000) [
 		sha256(Literal("hello").join(locals.i)),
 		locals.i.changeby(1)
-	]),
+	],
 	stdout.append(Literal("Benchmarked ").join(locals.i).join("H/s"))
 ]
 
 cat.on_flag([
 	stdout.delete_all(),
 	benchmark_sha256(),
-	sha256("hello"),
-	stdout.append(sha256.out),
+	stdout.append("Demonstration:"),
+	repeatuntil (Answer() == "exit") [
+		stdout.append("Enter input string: (Lowercase-only, for now)"),
+		AskAndWait(),
+		sha256(Answer()),
+		stdout.append(Literal("sha256(").join(Answer()).join(") =")),
+		stdout.append(sha256.out)
+	]
 ])
 
 project.save("test.sb3")

@@ -179,6 +179,10 @@ cat.on_flag([
 	modmul_decode_output(),
 	stdout.append("(a * b) % (2^225-19) ="),
 	stdout.append(modmul_decode_output.out_hex),
+
+	#AskAndWait("hello"),
+	#stdout.append(Literal("You said: ").join(Answer())),
+
 	benchmark_modmul()
 ])
 

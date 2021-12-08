@@ -257,6 +257,15 @@ class IfElseStatement(Statement):
 	def __init__(self, condition, then, elsedo):
 		super().__init__("control_if_else", CONDITION=_ensure_expression(condition), SUBSTACK=then, SUBSTACK2=elsedo)
 
+class AskAndWait(Statement):
+	def __init__(self, prompt=""):
+		self.op = "sensing_askandwait"
+		self.prompt = _ensure_expression(prompt)
+
+class Answer(Expression):
+	def __init__(self):
+		pass
+
 class ProcDef(Statement):
 	def __init__(self, proto):
 		self.op = "procedures_definition"
@@ -361,33 +370,42 @@ class ProcVarBool(Expression):
 
 # user-facing API
 
-def on_flag(substack):
+def on_flag(substack=None):
 	return [Statement("event_whenflagclicked")] + substack
 
 
-def forever(do):
+def forever(do=None):
+	if do is None:
+		return getitem_hack(forever)
 	return Statement("control_forever", SUBSTACK=do)
 
 
-def repeatn(times, body):
+def repeatn(times, body=None):
+	if body is None:
+		return getitem_hack(repeatn, times)
 	return Statement("control_repeat", TIMES=_ensure_expression(times), SUBSTACK=body)
 
-def repeatuntil(cond, body):
+def repeatuntil(cond, body=None):
+	if body is None:
+		return getitem_hack(repeatuntil, cond)
 	return Statement("control_repeat_until", CONDITION=_ensure_expression(cond), SUBSTACK=body)
+
+def getitem_hack(fn, *args):
+	class GetitemHack():
+		def __init__(self, *args):
+			self.args = args
+		
+		def __getitem__(self, then):
+			if type(then) != tuple:
+				then = [then]
+			return fn(*self.args, list(then))
+	
+	return GetitemHack(*args)
 
 def IF(condition, then=None):
 	if then is None:
-		return IfStatementHack(condition)
+		return getitem_hack(IF, condition)
 	return IfStatement(condition, then)
-
-class IfStatementHack():
-	def __init__(self, condition):
-		self.condition = condition
-
-	def __getitem__(self, then):
-		if type(then) != tuple:
-			then = [then]
-		return IfStatement(self.condition, list(then))
 
 # sugar
 

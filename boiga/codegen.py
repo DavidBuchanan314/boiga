@@ -388,6 +388,14 @@ def serialise_statement(blocks_json, sprite, statement):
 			}
 		}
 
+	elif statement.op == "sensing_askandwait":
+		out = {
+			"opcode": "sensing_askandwait",
+			"inputs": {
+				"QUESTION": serialise_arg(blocks_json, sprite, statement.prompt, uid)
+			}
+		}
+
 	else:
 		raise Exception(f"I don't know how to serialise this op: {statement.op!r}")
 	
@@ -611,6 +619,18 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 	elif type(expression) is ast.DaysSince2k:
 		blocks_json[uid] = {
 			"opcode": "sensing_dayssince2000",
+			"next": None,
+			"parent": parent,
+			"inputs": {},
+			"fields": {},
+			"shadow": shadow,
+			"topLevel": False
+		}
+		return uid
+	
+	elif type(expression) is ast.Answer:
+		blocks_json[uid] = {
+			"opcode": "sensing_answer",
 			"next": None,
 			"parent": parent,
 			"inputs": {},

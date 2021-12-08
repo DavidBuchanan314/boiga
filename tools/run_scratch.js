@@ -9,8 +9,12 @@
 
 const fs = require('fs');
 
+const readline = require('readline');
 const VirtualMachine = require('scratch-vm');
+const ScratchStorage = require('scratch-storage');
+const storage = new ScratchStorage();
 const vm = new VirtualMachine();
+vm.attachStorage(storage);
 vm.start();
 vm.clear();
 vm.setCompatibilityMode(false);
@@ -21,30 +25,37 @@ require('minilog').disable();
 
 // Replace special characters with '＼dXXX'
 const special_chars = /([^ !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~])/g;
-const inputStr = fs.readFileSync(0).toString().
-    replace(special_chars, (_match, g, _offset, _str) => '＼d' + g.charCodeAt(0).toString().padStart(3, '0'));
+//const inputStr = fs.readFileSync(0).toString().
+//    replace(special_chars, (_match, g, _offset, _str) => '＼d' + g.charCodeAt(0).toString().padStart(3, '0'));
 
 // Input bytes from STDIN as a response to Scratch's ask block.
 // If the program requires more input, put EOF ('＼0').
-let inputDone = false;
-vm.runtime.addListener('QUESTION', q => {
-    if (q === 'stdin' && !inputDone) {
-        vm.runtime.emit('ANSWER', inputStr);
-        inputDone = true;
-    } else {
-        vm.runtime.emit('ANSWER', '＼0'); // put EOF
-    }
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
+
+vm.runtime.addListener('QUESTION', (q, r) => {
+    if (q === null)
+        return;
+    rl.question("> ", ans => {
+        //rl.close();
+        vm.runtime.emit('ANSWER', ans);
+    })
 });
 
 // Get output bytes that the program wrote as contents of Scratch's list block,
 // then replace special characters with corresponding ones.
 // ('＼dXXX' (decimal XXX) → a character with code point XXX)
 function printResult() {
+    if (0) {// I patched scratch3_data.js to print on append to stdout
     const stdout_result = Object.values(vm.runtime.targets[0].variables).filter(v => v.name == "stdout")[0].value;
     const stdout_str =
         stdout_result.join('\n').replace(/＼(\d{1,3})/g,
             (_match, g, _offset, _str) => String.fromCharCode(g));
     process.stdout.write(stdout_str + "\n");
+    }
     process.nextTick(process.exit);
 };
 
