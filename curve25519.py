@@ -162,6 +162,18 @@ def benchmark_modmul(locals): return [
 	stdout.append(modmul_decode_output.out_hex)
 ]
 
+def int255cpy(dst, src): return [
+	dst[i] < src[i]
+	for i in range(12)
+]
+
+def modmul_copyargs(dst, a, b): return [
+	int255cpy(A, a),
+	int255cpy(B, b),
+	modmul_body(),
+	int255cpy(dst, C)
+]
+
 a = cat.new_var("a")
 b = cat.new_var("b")
 

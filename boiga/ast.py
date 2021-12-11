@@ -125,12 +125,18 @@ class BinaryOp(Expression):
 		# ((foo + a) + b)  =>  (foo + a+b)
 		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "+" and type(self.lval.rval) is Literal:
 			#print("simplifying")
-			return BinaryOp("+", self.lval.lval, self.rval.value + self.lval.rval.value)
+			val = self.rval.value + self.lval.rval.value
+			if val == 0:
+				return self.lval.lval
+			return BinaryOp("+", self.lval.lval, val)
 		
 		# ((foo - a) + b)  =>  (foo + b-a)
 		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "-" and type(self.lval.rval) is Literal:
 			#print("simplifying")
-			return BinaryOp("+", self.lval.lval, self.rval.value - self.lval.rval.value)
+			val = self.rval.value - self.lval.rval.value
+			if val == 0:
+				return self.lval.lval
+			return BinaryOp("+", self.lval.lval, val)
 
 		return self
 

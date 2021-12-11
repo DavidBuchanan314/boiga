@@ -202,9 +202,9 @@ def sha512(locals, sha512_in): return [
 	ascii_decode(sha512_in),
 	hex_out.append(0x80),
 
-	repeatuntil(hex_out.len() == 60, [
+	repeatuntil (hex_out.len() == 60) [
 		hex_out.append(0)
-	]),
+	],
 
 	locals.i[:120:8] >> [
 		W[1].append(hex_out[locals.i + 3] + (hex_out[locals.i + 2] << 8) + (hex_out[locals.i + 1] << 16) + (hex_out[locals.i] << 24)),
@@ -302,10 +302,10 @@ def benchmark_sha512(locals): return [
 	stdout.append("Benchmarking..."),
 	locals.bench_start <= millis_now,
 	locals.i <= 0,
-	repeatuntil((millis_now - locals.bench_start) > 1000, [
+	repeatuntil((millis_now - locals.bench_start) > 1000) [
 		sha512(Literal("hello").join(locals.i)),
 		locals.i.changeby(1)
-	]),
+	],
 	stdout.append(Literal("Benchmarked ").join(locals.i).join("H/s"))
 ]
 
