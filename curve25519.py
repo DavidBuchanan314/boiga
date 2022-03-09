@@ -35,6 +35,14 @@ def bitstringify(locals, out, inp): return [
 	]
 ]
 
+# input little-endian hex, output binary int string, lsb first
+def bitstringify_le(locals, out, inp): return [
+	out <= "",
+	locals.i[:inp.len():2] >> [
+		out <= out.join( HEXBITS[Literal("0x").join(inp[locals.i + 1])] ).join( HEXBITS[Literal("0x").join(inp[locals.i])] )
+	]
+]
+
 def fsplit(locals, out, inp): return [
 	out.delete_all(),
 	locals.bitindex <= 0,
@@ -79,6 +87,20 @@ def bits2hex(locals, out, inp): return [
 			inp[locals.i + j] << j
 			for j in range(4)
 		])].join(out)
+	]
+]
+
+def bits2hex_le(locals, out, inp): return [
+	out <= "",
+	locals.i[:256:8] >> [
+		out <= out.join(Literal("0123456789abcdef")[sumchain([
+			inp[locals.i + j + 4] << j
+			for j in range(4)
+		])]).join(
+			Literal("0123456789abcdef")[sumchain([
+			inp[locals.i + j] << j
+			for j in range(4)
+		])])
 	]
 ]
 
@@ -341,10 +363,17 @@ smCB = cat.new_list("smCB", [0]*12)
 @cat.proc_def("x25519_scalarmult [scalar] [element]")
 def x25519_scalarmult(locals, scalar, element): return [
 
-	# TODO: decodeScalar25519
+	#bitstringify_le(locals, locals.scalarbits, scalar),
+	locals.scalarbits <= "",
+	locals.scalarbits <= locals.scalarbits.join( HEXBITS[(Literal("0x").join(scalar[1]) >> 3) << 3] ).join( HEXBITS[Literal("0x").join(scalar[0])] ),
+	locals.i[2:scalar.len()-2:2] >> [
+		locals.scalarbits <= locals.scalarbits.join( HEXBITS[Literal("0x").join(scalar[locals.i + 1])] ).join( HEXBITS[Literal("0x").join(scalar[locals.i])] )
+	],
+	locals.scalarbits <= locals.scalarbits.join( HEXBITS[Literal("0x").join(scalar[locals.i + 1])] ).join( HEXBITS[(Literal("0x").join(scalar[locals.i]) & 3) + 4] ),
 
-	bitstringify(locals, locals.scalarbits, scalar),
-	bitstringify(locals, locals.elementbits, element),
+	#stdout.append(locals.scalarbits),
+
+	bitstringify_le(locals, locals.elementbits, element),
 	fsplit(locals, x_1, locals.elementbits),
 
 	locals.i[1:12] >> [
@@ -394,7 +423,7 @@ def x25519_scalarmult(locals, scalar, element): return [
 
 		modmul_copyargs(x_2, smAA, smBB),
 
-		modmul_copyargs(smBB, CONST_121665, smE), # using smBB as tmp here
+		modmul_copyargs(smBB, CONST_121665, smE), # using smBB as tmp here # TODO could probably optimise this significantly
 		int255add(smAA, smAA, smBB),
 		modmul_copyargs(z_2, smE, smAA),
 	],
@@ -409,8 +438,8 @@ def x25519_scalarmult(locals, scalar, element): return [
 	int255cpy(B, x_2),
 	modmul_body(),
 
-	modmul_decode_output(),
-	locals.out_hex <= modmul_decode_output.out_hex
+	fjoin(locals, locals.out_bits, C),
+	bits2hex_le(locals, locals.out_hex, locals.out_bits)
 ]
 
 
@@ -436,8 +465,12 @@ def benchmark_modmul(locals): return [
 @cat.proc_def("benchmark_x25519_scalarmult")
 def benchmark_x25519_scalarmult(locals): return [
 	locals.bench_start <= millis_now,
-	locals.a <= "449a44ba44226a50185afcc10a4c1462dd5e46824b15163b9d7c52f06be346a0",
-	locals.b <= "4c1cabd0a603a9103b35b326ec2466727c5fb124a4c19435db3030586768dbe6",
+	#locals.a <= "a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4",
+	#locals.b <= "e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c",
+	#locals.b <= "a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4",
+	#locals.a <= "e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c",
+	locals.a <= "4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d",
+	locals.b <= "e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493",
 	stdout.append(""),
 	stdout.append("a ="),
 	stdout.append(locals.a),
@@ -447,6 +480,22 @@ def benchmark_x25519_scalarmult(locals): return [
 	stdout.append("x25519_scalarmult(a, b) ="),
 	stdout.append(x25519_scalarmult.out_hex),
 	stdout.append(Literal("Completed in ").join(millis_now - locals.bench_start).join("ms")),
+
+	stdout.append(""),
+	stdout.append("Testing:"),
+
+	forever([
+		stdout.append("Enter Scalar value (little-endian hex):"),
+		AskAndWait("Scalar:"),
+		locals.a <= Answer(),
+		stdout.append("Enter Element value (little-endian hex):"),
+		AskAndWait("Element:"),
+		locals.b <= Answer(),
+
+		x25519_scalarmult(locals.a, locals.b),
+		stdout.append("x25519_scalarmult(Scalar, Element) ="),
+		stdout.append(x25519_scalarmult.out_hex),
+	])
 ]
 
 
