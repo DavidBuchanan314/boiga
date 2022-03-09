@@ -116,12 +116,12 @@ class Sprite():
 	def on_flag(self, stack):
 		self.add_script(ast.on_flag(stack))
 
-	def proc_def(self, fmt, generator=None):
+	def proc_def(self, fmt, generator=None, turbo=True):
 		if generator is None: # function decorator hackery
-			return lambda generator: self.proc_def(fmt, generator)
+			return lambda generator: self.proc_def(fmt, generator, turbo)
 		
 		uid = gen_uid()
-		proc_proto = ast.ProcProto(self, fmt, uid)
+		proc_proto = ast.ProcProto(self, fmt, uid, turbo)
 
 		for varname, vartype in zip(proc_proto.argnames, proc_proto.argtypes):
 			varinit = ast.ProcVarBool if vartype == "bool" else ast.ProcVar
@@ -384,7 +384,7 @@ def serialise_statement(blocks_json, sprite, statement):
 				"children": [],
 				"proccode": statement.proc.proccode,
 				"argumentids": json.dumps(list(inputs.keys())),
-				"warp": "true"
+				"warp": "true" if statement.proc.turbo else "false"
 			}
 		}
 

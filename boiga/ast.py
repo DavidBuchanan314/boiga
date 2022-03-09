@@ -291,11 +291,12 @@ class ProcDef(Statement):
 		return f"ProcDef({self.proto!r})"
 
 class ProcProto(Statement):
-	def __init__(self, sprite, fmt, uid):
+	def __init__(self, sprite, fmt, uid, turbo=True):
 		self.op = "procedures_prototype"
 		self.sprite = sprite
 		self.uid = uid
 		self.fmt = fmt
+		self.turbo = turbo
 
 		# quick and dirty parser state machine
 		# [square] brackets denote numeric/string args, <triangle> brackets denote bool args
@@ -340,7 +341,7 @@ class ProcProto(Statement):
 
 
 class ProcCall(Statement):
-	def __init__(self, proc, args):
+	def __init__(self, proc, args, turbo=True):
 		self.proc = proc
 		args = list(map(_ensure_expression, args))
 

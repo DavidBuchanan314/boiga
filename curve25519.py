@@ -144,26 +144,13 @@ def modmul_decode_output(locals): return [
 	bits2hex(locals, locals.out_hex, locals.out_bits)
 ]
 
-@cat.proc_def("benchmark_modmul")
-def benchmark_modmul(locals): return [
-	stdout.append("Benchmarking..."),
-	init_modmul("5629e6259c8e0cd24b4068fff626f159b9a25f2ea3b93016ca437303b11996b2",
-		"5c95420de6c0ecc96a35a2870a5544c0b54f3041abbb9dac24b1f5b06d6cc0ce"),
-
-	locals.bench_start <= millis_now,
-	locals.i <= 0,
-	repeatuntil((millis_now - locals.bench_start) > 1000, [
-		modmul_body(),
-		locals.i.changeby(1)
-	]),
-	stdout.append(Literal("Benchmarked ").join(locals.i).join(" muls/s")),
-
-	modmul_decode_output(),
-	stdout.append(modmul_decode_output.out_hex)
+def int255cpy(dst, src): return [
+	dst[i] <= src[i]
+	for i in range(12)
 ]
 
-def int255cpy(dst, src): return [
-	dst[i] < src[i]
+def int255add(dst, src_a, src_b): return [
+	dst[i] <= src_a[i] + src_b[i]
 	for i in range(12)
 ]
 
@@ -173,6 +160,46 @@ def modmul_copyargs(dst, a, b): return [
 	modmul_body(),
 	int255cpy(dst, C)
 ]
+
+
+inv_tmp = cat.new_list("INV_TMP", [0]*12)
+# input: A, output C
+@cat.proc_def("x25519_invert")
+def x25519_invert(locals): return [
+	int255cpy(inv_tmp, A), # copy of input
+	int255cpy(C, A), # c = accumulator
+	locals.i[253:-1:-1] >> [
+		int255cpy(A, C),
+		int255cpy(B, C), # TODO: optimised squaring
+		modmul_body(), # C = C * C
+		IF ((locals.i != 2).AND(locals.i != 4)) [
+			int255cpy(A, C),
+			int255cpy(B, inv_tmp),
+			modmul_body(), # C = C * inv_tmp
+		]
+	]
+]
+
+@cat.proc_def("benchmark_modmul")
+def benchmark_modmul(locals): return [
+	stdout.append("Benchmarking..."),
+	init_modmul("5629e6259c8e0cd24b4068fff626f159b9a25f2ea3b93016ca437303b11996b2",
+		"5c95420de6c0ecc96a35a2870a5544c0b54f3041abbb9dac24b1f5b06d6cc0ce"),
+
+	locals.bench_start <= millis_now,
+	locals.i <= 0,
+	repeatuntil((millis_now - locals.bench_start) > 1000, [
+		#modmul_body(),
+		modmul_copyargs(C, A, B),
+		locals.i.changeby(1)
+	]),
+	stdout.append(Literal("Benchmarked ").join(locals.i).join(" muls/s")),
+
+	modmul_decode_output(),
+	stdout.append(modmul_decode_output.out_hex)
+]
+
+
 
 a = cat.new_var("a")
 b = cat.new_var("b")
@@ -192,10 +219,17 @@ cat.on_flag([
 	stdout.append("(a * b) % (2^225-19) ="),
 	stdout.append(modmul_decode_output.out_hex),
 
+	init_modmul(a, b),
+	x25519_invert(),
+	modmul_decode_output(),
+
+	stdout.append("pow(a, -1, 2^225-19) ="),
+	stdout.append(modmul_decode_output.out_hex),
+
 	#AskAndWait("hello"),
 	#stdout.append(Literal("You said: ").join(Answer())),
 
-	benchmark_modmul()
+	#benchmark_modmul()
 ])
 
 project.save("test.sb3")
