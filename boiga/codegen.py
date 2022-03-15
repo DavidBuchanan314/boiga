@@ -50,6 +50,11 @@ class Project():
 				}
 			}
 			
+			block_count = 0
+			for serialised, sprite in zip(project["targets"], self.sprites):
+				block_count += len(serialised["blocks"]) + sprite.block_count
+			print(f"[*] Serialised {block_count} blocks")
+
 			# TODO: put this behind a debug flag
 			debug_json = json.dumps(project, indent=4)
 			#print(debug_json)
@@ -141,6 +146,7 @@ class Sprite():
 		return procdef#lambda *args: ast.Statement("procedures_call", PROC=uid, ARGS=args)
 	
 	def serialise(self):
+		self.block_count = 0
 		if self.template_json:
 			sprite = self.template_json
 		else:
@@ -431,6 +437,7 @@ def serialise_arg(blocks_json, sprite, expression, parent):
 	if type(expression) is ast.Literal:
 		return [1, [10 if type(expression.value) is str else 4, str(expression.value)]]
 	if type(expression) is ast.Var:
+		sprite.block_count += 1
 		return [3, [12, expression.name, expression.uid], [10, ""]]
 	
 	# compound expressions
@@ -444,8 +451,10 @@ def serialise_bool(blocks_json, sprite, expression, parent):
 
 def serialise_procproto(blocks_json, sprite, proto, parent):
 	inputs = {}
+	sprite.block_count -= 1
 
 	for var in proto.vars:
+		sprite.block_count -= 1
 		inputs[var.uid2] = [1, var.uid]
 		serialise_expression(blocks_json, sprite, var, proto.uid, shadow=True)
 	
