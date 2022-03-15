@@ -50,6 +50,9 @@ class Expression():
 	def __floor__(self):
 		return UnaryOp("floor", self)
 	
+	def __ceil__(self):
+		return UnaryOp("ceil", self)
+	
 	def __rshift__(self, other):
 		if not type(other) is int:
 			raise Exception("Can only rshift by constant (for now)")
@@ -210,6 +213,9 @@ class List(Expression):
 	def delete_all(self):
 		return Statement("data_deletealloflist", LIST=self)
 	
+	def delete_at(self, other):
+		return Statement("data_deleteoflist", LIST=self, INDEX=(_ensure_expression(other)+1).simplified())
+
 	def len(self):
 		return UnaryOp("listlen", self)
 	
@@ -375,6 +381,8 @@ class ProcVarBool(Expression):
 	def __repr__(self):
 		return f"ProcVarBool({self.procproto.fmt!r}: {self.name})"
 
+
+
 # user-facing API
 
 def on_flag(substack=None):
@@ -441,6 +449,9 @@ def sumchain(arr):
 
 millis_now = DaysSince2k() * 86400000
 
+
+def pickrandom(a, b):
+	return BinaryOp("random", a, b)
 
 
 if __name__ == "__main__":

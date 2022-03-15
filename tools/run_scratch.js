@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // Script taken from https://github.com/shinh/elvm/blob/master/tools/run_scratch.js
 
 // This script executes a Scratch 3.0 program that the Scratch backend generates.

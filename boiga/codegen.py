@@ -2,6 +2,7 @@ from .utils import gen_uid
 from zipfile import ZipFile
 import json
 import sys
+import subprocess
 
 from . import ast
 
@@ -29,7 +30,7 @@ class Project():
 		self.sprites.append(sprite)
 		return sprite
 	
-	def save(self, filename, stealthy=False):
+	def save(self, filename, stealthy=False, execute=False):
 		self.used_layers = set() # used during serialisation
 		self.used_assets = set()
 		
@@ -60,6 +61,9 @@ class Project():
 			for asset_name in self.used_assets:
 				with zf.open(asset_name, "w") as f:
 					f.write(self.asset_data[asset_name])
+		
+		if execute:
+			subprocess.call(["./tools/run_scratch.js", filename])
 
 
 class Sprite():
@@ -361,6 +365,19 @@ def serialise_statement(blocks_json, sprite, statement):
 				]
 			}
 		}
+	elif statement.op == "data_deleteoflist":
+		out = {
+			"opcode": "data_deleteoflist",
+			"inputs": {
+				"INDEX": serialise_arg(blocks_json, sprite, statement.args["INDEX"], uid)
+			},
+			"fields": {
+				"LIST": [
+					statement.args["LIST"].name,
+					statement.args["LIST"].uid
+				]
+			}
+		}
 	
 	# ======= custom blocks =======
 
@@ -470,7 +487,8 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 			"||": ("operator_or", "OPERAND"),
 			"join": ("operator_join", "STRING"),
 			"%": ("operator_mod", "NUM"),
-			"[]": ("operator_letter_of", "LETTER")
+			"[]": ("operator_letter_of", "LETTER"),
+			"random": ("operator_random", "FROM")
 		}
 		if expression.op in opmap:
 			opcode, argname = opmap[expression.op]
@@ -479,9 +497,13 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 			an1 = argname+"1"
 			an2 = argname+"2"
 
+			# TODO: encode this nicely in the table above...
 			if expression.op == "[]":
 				an1 = "LETTER"
 				an2 = "STRING"
+			elif expression.op == "random":
+				an1 = "FROM"
+				an2 = "TO"
 
 			blocks_json[uid] = {
 				"opcode": opcode,
@@ -569,6 +591,21 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 				},
 				"fields": {
 					"OPERATOR": ["floor", None]
+				},
+				"shadow": False,
+				"topLevel": False,
+			}
+			return uid
+		elif expression.op == "ceil":
+			blocks_json[uid] = {
+				"opcode": "operator_mathop",
+				"next": None,
+				"parent": parent,
+				"inputs": {
+					"NUM": serialise_arg(blocks_json, sprite, expression.value, uid),
+				},
+				"fields": {
+					"OPERATOR": ["ceiling", None]
 				},
 				"shadow": False,
 				"topLevel": False,
