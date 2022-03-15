@@ -3,6 +3,9 @@ from boiga.ast import *
 
 import math
 
+# compromise on code size, to squeeze out the last drops of perf
+MAX_PERF = False
+
 project = Project(template="test_files/Scratch Project.sb3")
 
 cat = project.new_sprite("Sprite1")
@@ -70,10 +73,10 @@ def realjoin(floats):
 """
 def fjoin(locals, out, inp): return [
 	out <= "",
-	locals.i[:12] >> [
-		locals.blah <= inp[locals.i] / RTOTALS[locals.i],
+	locals.i[1:12+1] >> [
+		locals.blah <= inp[locals.i-1] / RTOTALS[locals.i-1],
 		locals.shift <= 1,
-		locals.j[:RADICES[locals.i]] >> [
+		locals.j[:RADICES[locals.i-1]] >> [
 			out <= out.join((locals.blah // locals.shift) & 1),
 			locals.shift <= locals.shift * 2
 		]
@@ -173,18 +176,21 @@ def modmul_body(locals): return [
 	[
 		[
 			C[i-12] <= C[i-12] + (C[i] * (19.0*(2**-255))),
-			C[i] <= 0.0
+			#C[i] <= 0.0
 		]
 		for i in range(12, 23)
 	],
+	#C[12] <= 0.0,
 
 	[
 		carry_from(locals, C, i)
 		for i in range(11)
 	],
 
-	carry_from(locals, C, 11),
-	C[0] <= C[0] + (C[12] * (19.0*(2**-255))),
+	#carry_from(locals, C, 11),
+	tmp <= (C[11] - (C[11] % (2.0**math.ceil((11+1)*21.25)))),
+	C[11] <= C[11] - (C[11] - (C[11] % (2.0**math.ceil((11+1)*21.25)))),
+	C[0] <= C[0] + (tmp * (19.0*(2**-255))),
 ]
 
 
@@ -199,18 +205,21 @@ def modmul_square_body(locals): return [
 	[
 		[
 			C[i-12] <= C[i-12] + (C[i] * (19.0*(2**-255))),
-			C[i] <= 0.0
+			#C[i] <= 0.0
 		]
 		for i in range(12, 23)
 	],
+	#C[12] <= 0.0,
 
 	[
 		carry_from(locals, C, i)
 		for i in range(11)
 	],
 
-	carry_from(locals, C, 11),
-	C[0] <= C[0] + (C[12] * (19.0*(2**-255))),
+	#carry_from(locals, C, 11),
+	tmp <= (C[11] - (C[11] % (2.0**math.ceil((11+1)*21.25)))),
+	C[11] <= C[11] - (C[11] - (C[11] % (2.0**math.ceil((11+1)*21.25)))),
+	C[0] <= C[0] + (tmp * (19.0*(2**-255))),
 ]
 
 @cat.proc_def("modmul_decode_output")
@@ -219,44 +228,81 @@ def modmul_decode_output(locals): return [
 	bits2hex(locals, locals.out_hex, locals.out_bits)
 ]
 
-if 1:
+cpi = cat.new_var("cpi")
+if MAX_PERF:
 	def int255cpy(dst, src): return [
-		dst[i] <= src[i]
-		for i in range(12)
-	]
+		dst.delete_all(),
+		[
+			dst.append(src[i])
+			for i in range(12)
+		]
+	] if dst.uid != src.uid else []
 
 	def int255add(dst, src_a, src_b): return [
+		dst.delete_all(),
+		[
+			dst.append(src_a[i] + src_b[i])
+			for i in range(12)
+		]
+	] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
 		dst[i] <= src_a[i] + src_b[i]
 		for i in range(12)
 	]
 
 	def int255sub(dst, src_a, src_b): return [
-		dst[i] <= src_a[i] - src_b[i]
+		dst.delete_all(),
+		[
+			dst.append(src_a[i] - src_b[i])
+			for i in range(12)
+		]
+	] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
+		dst[i] <= src_a[i] + src_b[i]
 		for i in range(12)
 	]
 else:
-	cpi = cat.new_var("cpi")
 	def int255cpy(dst, src): return [
-		cpi[:12] >> [
-			dst[cpi] <= src[cpi]
+		dst.delete_all(),
+		cpi[1:12+1] >> [
+			dst.append(src[cpi-1])
 		]
-	]
+	] if dst.uid != src.uid else []
 
 	def int255add(dst, src_a, src_b): return [
-		cpi[:12] >> [
-			dst[cpi] <= src_a[cpi] + src_b[cpi]
+		dst.delete_all(),
+		cpi[1:12+1] >> [
+			dst.append(src_a[cpi-1] + src_b[cpi-1])
+		]
+	] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
+		cpi[1:12+1] >> [
+			dst[cpi-1] <= src_a[cpi-1] + src_b[cpi-1]
 		]
 	]
 
 	def int255sub(dst, src_a, src_b): return [
-		cpi[:12] >> [
-			dst[cpi] <= src_a[cpi] - src_b[cpi]
+		dst.delete_all(),
+		cpi[1:12+1] >> [
+			dst.append(src_a[cpi-1] - src_b[cpi-1])
+		]
+	] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
+		cpi[1:12+1] >> [
+			dst[cpi-1] <= src_a[cpi-1] - src_b[cpi-1]
 		]
 	]
 
 def modmul_copyargs(dst, a, b): return [
-	int255cpy(A, a),
-	int255cpy(B, b),
+	#int255cpy(A, a),
+	#int255cpy(B, b),
+	[
+		A.delete_all(),
+		B.delete_all(),
+		cpi[1:12+1] >> [
+			A.append(a[cpi-1]),
+			B.append(b[cpi-1])
+		]
+	] if a.uid != A.uid and b.uid != B.uid else [
+		int255cpy(A, a),
+		int255cpy(B, b),
+	],
 	modmul_body(),
 	int255cpy(dst, C)
 ]
@@ -286,12 +332,12 @@ def x25519_invert(locals): return [
 ]
 
 # this is like, vaguely constant-time, probably
-if 0:
+if not MAX_PERF:
 	def cswap(locals, swap, a, b): return [
-		locals.swapi[:12] >> [
-			locals.swaptmp <= (a[locals.swapi] * swap) + (b[locals.swapi] * (Literal(1) - swap)),
-			a[locals.swapi] <= (b[locals.swapi] * swap) + (a[locals.swapi] * (Literal(1) - swap)),
-			b[locals.swapi] <= locals.swaptmp
+		locals.swapi[1:12+1] >> [
+			locals.swaptmp <= (a[locals.swapi-1] * swap) + (b[locals.swapi-1] * (Literal(1) - swap)),
+			a[locals.swapi-1] <= (b[locals.swapi-1] * swap) + (a[locals.swapi-1] * (Literal(1) - swap)),
+			b[locals.swapi-1] <= locals.swaptmp
 		]
 	]
 else:
@@ -376,19 +422,19 @@ def x25519_scalarmult(locals, scalar, element): return [
 	bitstringify_le(locals, locals.elementbits, element),
 	fsplit(locals, x_1, locals.elementbits),
 
-	locals.i[1:12] >> [
-		x_2[locals.i] <= 0
+	locals.i[1+1:12+1] >> [
+		x_2[locals.i-1] <= 0
 	],
 	x_2[0] <= 1,
 
-	locals.i[:12] >> [
-		z_2[locals.i] <= 0
+	locals.i[1:12+1] >> [
+		z_2[locals.i-1] <= 0
 	],
 
 	int255cpy(x_3, x_1),
 
-	locals.i[1:12] >> [
-		z_3[locals.i] <= 0
+	locals.i[1+1:12+1] >> [
+		z_3[locals.i-1] <= 0
 	],
 	z_3[0] <= 1,
 
@@ -401,15 +447,24 @@ def x25519_scalarmult(locals, scalar, element): return [
 		cswap(locals, locals.swap, z_2, z_3),
 		locals.swap <= locals.k_t,
 
-		int255add(smA, x_2, z_2),
-		modmul_square_copyargs(smAA, smA),
+		smA.delete_all(),
+		smB.delete_all(),
+		cpi[1:12+1] >> [
+			smA.append(x_2[cpi-1] + z_2[cpi-1]),
+			smB.append(x_2[cpi-1] - z_2[cpi-1])
+		],
 
-		int255sub(smB, x_2, z_2),
+		modmul_square_copyargs(smAA, smA),
 		modmul_square_copyargs(smBB, smB),
 
-		int255sub(smE, smAA, smBB),
-		int255add(smC, x_3, z_3),
-		int255sub(smD, x_3, z_3),
+		smE.delete_all(),
+		smC.delete_all(),
+		smD.delete_all(),
+		cpi[1:12+1] >> [
+			smE.append(smAA[cpi-1] - smBB[cpi-1]),
+			smC.append(x_3[cpi-1] + z_3[cpi-1]),
+			smD.append(x_3[cpi-1] - z_3[cpi-1]),
+		],
 
 		modmul_copyargs(smDA, smD, smA),
 		modmul_copyargs(smCB, smC, smB),
@@ -423,9 +478,9 @@ def x25519_scalarmult(locals, scalar, element): return [
 
 		modmul_copyargs(x_2, smAA, smBB),
 
-		modmul_copyargs(smBB, CONST_121665, smE), # using smBB as tmp here # TODO could probably optimise this significantly
-		int255add(smAA, smAA, smBB),
-		modmul_copyargs(z_2, smE, smAA),
+		modmul_copyargs(C, CONST_121665, smE),
+		int255add(B, smAA, C),
+		modmul_copyargs(z_2, smE, B),
 	],
 
 	cswap(locals, locals.swap, x_2, x_3),
@@ -484,7 +539,7 @@ def benchmark_x25519_scalarmult(locals): return [
 	stdout.append(""),
 	stdout.append("Testing:"),
 
-	forever([
+	repeatuntil(Literal(1)==1)[
 		stdout.append("Enter Scalar value (little-endian hex):"),
 		AskAndWait("Scalar:"),
 		locals.a <= Answer(),
@@ -495,7 +550,7 @@ def benchmark_x25519_scalarmult(locals): return [
 		x25519_scalarmult(locals.a, locals.b),
 		stdout.append("x25519_scalarmult(Scalar, Element) ="),
 		stdout.append(x25519_scalarmult.out_hex),
-	])
+	]
 ]
 
 
@@ -533,4 +588,4 @@ cat.on_flag([
 	#benchmark_modmul()
 ])
 
-project.save("test.sb3")
+project.save("test.sb3", execute=True)
