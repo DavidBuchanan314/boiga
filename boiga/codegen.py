@@ -17,6 +17,7 @@ class Project():
 					self.asset_data[asset_name] = zf.open(asset_name).read()
 		
 		self.sprites = []
+		self.monitors = []
 		self.stage = self.new_sprite("Stage")
 	
 	def new_sprite(self, name):
@@ -37,7 +38,7 @@ class Project():
 		with ZipFile(filename, "w") as zf:
 			project = {
 				"targets": [s.serialise() for s in self.sprites],
-				"monitors": [],
+				"monitors": self.monitors,
 				"extensions": [],
 				"meta": {
 					"semver": "3.0.0",
@@ -110,13 +111,29 @@ class Sprite():
 		self.variable_values[uid] = value
 		return ast.Var(self, name, uid)
 	
-	def new_list(self, name, value=[]):
+	def new_list(self, name, value=[], monitor=None):
 		if not type(name) is str:
 			raise Exception("List name must be a string")
 		
 		uid = self.list_uids.get(name, gen_uid())
 		self.list_uids[name] = uid
 		self.list_values[uid] = value
+		if monitor:
+			self.project.monitors.append({
+				"id": uid,
+				"mode": "list",
+				"opcode": "data_listcontents",
+				"params": {
+					"LIST": name
+				},
+				"spriteName": None if self.name == "Stage" else self.name,
+				"value": [],
+				"width": monitor[2],
+				"height": monitor[3],
+				"x": monitor[0],
+				"y": monitor[1],
+				"visible": True
+			})
 		return ast.List(self, name, uid)
 	
 	def add_script(self, stack):
@@ -306,6 +323,13 @@ def serialise_statement(blocks_json, sprite, statement):
 				"SUBSTACK2": serialise_script(blocks_json, sprite, statement.args["SUBSTACK2"], uid)
 			}
 		}
+	elif statement.op == "control_wait":
+		out = {
+			"opcode": "control_wait",
+			"inputs": {
+				"DURATION": serialise_arg(blocks_json, sprite, statement.args["DURATION"], uid)
+			}
+		}
 	
 	# ===== DATA =======
 	elif statement.op == "data_setvariableto":
@@ -416,6 +440,83 @@ def serialise_statement(blocks_json, sprite, statement):
 			"opcode": "sensing_askandwait",
 			"inputs": {
 				"QUESTION": serialise_arg(blocks_json, sprite, statement.prompt, uid)
+			}
+		}
+
+	# ======= motion =======
+
+	elif statement.op == "motion_gotoxy":
+		out = {
+			"opcode": statement.op,
+			"inputs": {
+				"X": serialise_arg(blocks_json, sprite, statement.args["X"], uid),
+				"Y": serialise_arg(blocks_json, sprite, statement.args["Y"], uid)
+			}
+		}
+	
+	elif statement.op == "motion_changexby":
+		out = {
+			"opcode": statement.op,
+			"inputs": {
+				"DX": serialise_arg(blocks_json, sprite, statement.args["DX"], uid)
+			}
+		}
+	
+	elif statement.op == "motion_setx":
+		out = {
+			"opcode": statement.op,
+			"inputs": {
+				"X": serialise_arg(blocks_json, sprite, statement.args["X"], uid)
+			}
+		}
+	
+	elif statement.op == "motion_changeyby":
+		out = {
+			"opcode": statement.op,
+			"inputs": {
+				"DY": serialise_arg(blocks_json, sprite, statement.args["DY"], uid)
+			}
+		}
+	
+	elif statement.op == "motion_sety":
+		out = {
+			"opcode": statement.op,
+			"inputs": {
+				"Y": serialise_arg(blocks_json, sprite, statement.args["Y"], uid)
+			}
+		}
+
+	# ======= looks =======
+
+	elif statement.op in ["looks_show", "looks_hide"]:
+		out = {
+			"opcode": statement.op,
+			"inputs": {}
+		}
+	
+	# TODO: set effect
+
+	# ======= pen =======
+
+	elif statement.op in ["pen_clear", "pen_stamp", "pen_penDown", "pen_penUp"]:
+		out = {
+			"opcode": statement.op,
+			"inputs": {}
+		}
+
+	elif statement.op == "pen_setPenColorToColor":
+		out = {
+			"opcode": "pen_setPenColorToColor",
+			"inputs": {
+				"COLOR": serialise_arg(blocks_json, sprite, statement.args["COLOR"], uid)
+			}
+		}
+	
+	elif statement.op == "pen_setPenSizeTo":
+		out = {
+			"opcode": "pen_setPenSizeTo",
+			"inputs": {
+				"SIZE": serialise_arg(blocks_json, sprite, statement.args["SIZE"], uid)
 			}
 		}
 

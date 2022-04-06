@@ -10,7 +10,7 @@ project = Project(template="test_files/Scratch Project.sb3")
 
 cat = project.new_sprite("Sprite1")
 
-stdout = project.stage.new_list("stdout", [])
+stdout = project.stage.new_list("stdout", [], monitor=[0, 0, 480-2, 292])
 tmp = cat.new_var("tmp")
 tmp2 = cat.new_var("tmp2")
 tmp3 = cat.new_var("tmp3")
@@ -28,7 +28,7 @@ for i in range(len(radices)):
 	rtotals.append(rtotal)
 
 RADICES = cat.new_list("RADICES", [22, 21, 21, 21] * 6)
-RTOTALS = cat.new_list("RTOTALS", rtotals)
+RTOTALS = cat.new_list("RTOTALS", [float(x) for x in rtotals])
 
 # hex string to binary int, with least-significant bit first
 def bitstringify(locals, out, inp): return [
@@ -567,11 +567,13 @@ cat.on_flag([
 	stdout.append(a),
 	stdout.append("b ="),
 	stdout.append(b),
+	Wait(0),
 	init_modmul(a, b),
 	modmul_body(),
 	modmul_decode_output(),
 	stdout.append("(a * b) % (2^225-19) ="),
 	stdout.append(modmul_decode_output.out_hex),
+	Wait(0),
 
 	init_modmul(a, b),
 	x25519_invert(),
@@ -579,6 +581,7 @@ cat.on_flag([
 
 	stdout.append("pow(a, -1, 2^225-19) ="),
 	stdout.append(modmul_decode_output.out_hex),
+	Wait(0),
 
 	benchmark_x25519_scalarmult()
 
@@ -588,4 +591,4 @@ cat.on_flag([
 	#benchmark_modmul()
 ])
 
-project.save("test.sb3", execute=True)
+project.save("test.sb3", execute=False)

@@ -269,6 +269,10 @@ class IfElseStatement(Statement):
 	def __init__(self, condition, then, elsedo):
 		super().__init__("control_if_else", CONDITION=_ensure_expression(condition), SUBSTACK=then, SUBSTACK2=elsedo)
 
+class Wait(Statement):
+	def __init__(self, duration):
+		super().__init__("control_wait", DURATION=_ensure_expression(duration))
+
 class AskAndWait(Statement):
 	def __init__(self, prompt=""):
 		self.op = "sensing_askandwait"
@@ -277,6 +281,85 @@ class AskAndWait(Statement):
 class Answer(Expression):
 	def __init__(self):
 		pass
+
+# MOTION
+
+class SetXYPos(Statement):
+	def __init__(self, x, y):
+		super().__init__("motion_gotoxy",
+			X=_ensure_expression(x),
+			Y=_ensure_expression(y))
+
+class ChangeXPos(Statement):
+	def __init__(self, x):
+		super().__init__("motion_changexby",
+			DX=_ensure_expression(x))
+
+class SetXPos(Statement):
+	def __init__(self, x):
+		super().__init__("motion_setx",
+			X=_ensure_expression(x))
+
+class ChangeYPos(Statement):
+	def __init__(self, y):
+		super().__init__("motion_changeyby",
+			DY=_ensure_expression(y))
+
+class SetYPos(Statement):
+	def __init__(self, y):
+		super().__init__("motion_sety",
+			Y=_ensure_expression(y))
+
+# END MOTION
+
+# LOOKS
+
+class Show(Statement):
+	def __init__(self):
+		self.op = "looks_show"
+
+class Hide(Statement):
+	def __init__(self):
+		self.op = "looks_hide"
+
+class SetEffect(Statement):
+	def __init__(self, effect, value):
+		self.op = "looks_seteffectto"
+		super().__init__("looks_seteffectto",
+			EFFECT=_ensure_expression(effect),
+			VALUE=_ensure_expression(value))
+
+# END LOOKS
+
+# PEN
+
+class EraseAll(Statement):
+	def __init__(self):
+		self.op = "pen_clear"
+
+class Stamp(Statement):
+	def __init__(self):
+		self.op = "pen_stamp"
+
+class PenDown(Statement):
+	def __init__(self):
+		self.op = "pen_penDown"
+
+class PenUp(Statement):
+	def __init__(self):
+		self.op = "pen_penUp"
+
+# correct spellings only!
+class SetPenColour(Statement):
+	def __init__(self, colour):
+		super().__init__("pen_setPenColorToColor", COLOR=_ensure_expression(colour))
+
+class SetPenSize(Statement):
+	def __init__(self, size):
+		super().__init__("pen_setPenSizeTo", SIZE=_ensure_expression(size))
+
+ # END PEN
+
 
 class ProcDef(Statement):
 	def __init__(self, proto):
@@ -380,7 +463,6 @@ class ProcVarBool(Expression):
 	
 	def __repr__(self):
 		return f"ProcVarBool({self.procproto.fmt!r}: {self.name})"
-
 
 
 # user-facing API

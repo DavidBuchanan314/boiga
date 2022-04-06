@@ -7,7 +7,7 @@ project = Project(template="test_files/Scratch Project.sb3")
 
 cat = project.new_sprite("Sprite1")
 
-stdout = project.stage.new_list("stdout", [])
+stdout = project.stage.new_list("stdout", [], monitor=[0, 0, 480-2, 292])
 tmp = cat.new_var("tmp")
 tmp2 = cat.new_var("tmp2")
 tmp3 = cat.new_var("tmp3")
@@ -161,6 +161,8 @@ cat.on_flag([
 	stdout.delete_all(),
 	stdout.append("Initialising entropy pool..."),
 
+	Wait(0),
+
 	rng_init(),
 
 	stdout.append("Done! Generating 10 random bytes..."),
@@ -178,10 +180,12 @@ cat.on_flag([
 	rng_get_hex(4096),
 	stdout.append(rng_hex_out),
 
-	stdout.append("Done!")
+	stdout.append("Done!"),
+
+	AskAndWait(),
 ])
 
-project.save("test.sb3", execute=True)
+project.save("test.sb3", execute=False)
 
 """
 from Crypto.Cipher import ChaCha20
