@@ -1,8 +1,10 @@
+import hashlib
 from .utils import gen_uid
 from zipfile import ZipFile
 import json
 import sys
 import subprocess
+from PIL import Image
 
 from . import ast
 
@@ -83,6 +85,7 @@ class Sprite():
 		self.list_uids = {} # name to uid
 		self.list_values = {} # uid to value
 		self.scripts = []
+		self.costumes = {} # indexed by name
 		
 		if template:
 			for uid, (name, value) in template["variables"].items():
@@ -96,7 +99,7 @@ class Sprite():
 			self.current_costume = template["currentCostume"]
 			self.volume = template["volume"]
 		else:
-			self.current_costume = 0
+			self.current_costume = 1
 			self.volume = 100
 	
 	def new_var(self, name, value=""):
@@ -139,8 +142,14 @@ class Sprite():
 	def add_script(self, stack):
 		self.scripts.append(stack)
 	
+	def add_costume(self, name, data, extension):
+		self.costumes[name] = (data, extension)
+
 	def on_flag(self, stack):
 		self.add_script(ast.on_flag(stack))
+
+	def on_press(self, key, stack):
+		self.add_script(ast.on_press(key, stack))
 
 	def proc_def(self, fmt, generator=None, turbo=True):
 		if generator is None: # function decorator hackery
@@ -176,14 +185,7 @@ class Sprite():
 			sprite["blocks"] = {}
 			sprite["comments"] = {}
 			sprite["currentCostume"] = self.current_costume
-			sprite["costumes"] = [{ # TODO: this should be an empty list that we add to later
-				"assetId": "cd21514d0531fdffb22204e0ec5ed84a",
-				"name": "backdrop1",
-				"md5ext": "cd21514d0531fdffb22204e0ec5ed84a.svg",
-				"dataFormat": "svg",
-				"rotationCenterX": 240,
-				"rotationCenterY": 180
-			}]
+			sprite["costumes"] = []
 			
 			sprite["sounds"] = []
 			sprite["volume"] = self.volume
@@ -213,6 +215,29 @@ class Sprite():
 		# keep track of which lauers are occupied
 		self.project.used_layers.add(sprite["layerOrder"])
 		
+		for costume_name, (data, extension) in self.costumes.items():
+			md5 = hashlib.md5(data).hexdigest()
+			md5ext = f"{md5}.{extension}"
+			if extension == "png":
+				sprite["costumes"].append({
+					"assetId": md5,
+					"name": costume_name,
+					"md5ext": md5ext,
+					"dataFormat": extension,
+					"rotationCenterX": 0,
+					"rotationCenterY": 0
+				})
+			else: # TODO - do this properly???
+				sprite["costumes"].append({
+					"assetId": md5,
+					"name": costume_name,
+					"md5ext": md5ext,
+					"dataFormat": extension,
+					"rotationCenterX": 250,
+					"rotationCenterY": 185
+				})
+			self.project.asset_data[md5ext] = data
+
 		# mark the asset to be added to the sb3
 		for asset in sprite["costumes"] + sprite["sounds"]:
 			self.project.used_assets.add(asset["md5ext"])
@@ -280,6 +305,14 @@ def serialise_statement(blocks_json, sprite, statement):
 	if statement.op == "event_whenflagclicked":
 		out = {
 			"opcode": "event_whenflagclicked"
+		}
+	
+	elif statement.op == "event_whenkeypressed":
+		out = {
+			"opcode": "event_whenkeypressed",
+			"fields": {
+				"KEY_OPTION": [statement.args["KEY_OPTION"], None],
+			}
 		}
 	
 	# ===== CONTROL =======
@@ -494,6 +527,14 @@ def serialise_statement(blocks_json, sprite, statement):
 			"inputs": {}
 		}
 	
+	elif statement.op == "looks_switchcostumeto":
+		out = {
+			"opcode": statement.op,
+			"inputs": {
+				"COSTUME": serialise_arg(blocks_json, sprite, statement.args["COSTUME"], uid)
+			}
+		}
+
 	# TODO: set effect
 
 	# ======= pen =======
@@ -508,7 +549,7 @@ def serialise_statement(blocks_json, sprite, statement):
 		out = {
 			"opcode": "pen_setPenColorToColor",
 			"inputs": {
-				"COLOR": serialise_arg(blocks_json, sprite, statement.args["COLOR"], uid)
+				"COLOR": serialise_arg(blocks_json, sprite, statement.args["COLOR"], uid, alternative=[9, "#FF0000"])
 			}
 		}
 	
@@ -531,18 +572,20 @@ def serialise_statement(blocks_json, sprite, statement):
 	return uid
 
 
-def serialise_arg(blocks_json, sprite, expression, parent):
+def serialise_arg(blocks_json, sprite, expression, parent, alternative=[10, ""]):
 	#expression = expression.simplified() # experimental!
 	
 	# primitive expressions https://github.com/LLK/scratch-vm/blob/80e25f7b2a47ec2f3d8bb05fb62c7ceb8a1c99f0/src/serialization/sb3.js#L63
 	if type(expression) is ast.Literal:
 		return [1, [10 if type(expression.value) is str else 4, str(expression.value)]]
+	if type(expression) is ast.LiteralColour:
+		return [1, [9, expression.value]]
 	if type(expression) is ast.Var:
 		sprite.block_count += 1
-		return [3, [12, expression.name, expression.uid], [10, ""]]
+		return [3, [12, expression.name, expression.uid], alternative]
 	
 	# compound expressions
-	return [3, serialise_expression(blocks_json, sprite, expression, parent), [10, ""]]
+	return [3, serialise_expression(blocks_json, sprite, expression, parent), alternative]
 
 
 def serialise_bool(blocks_json, sprite, expression, parent):
@@ -574,7 +617,7 @@ def serialise_procproto(blocks_json, sprite, proto, parent):
 			"argumentids": json.dumps(list(inputs.keys())),
 			"argumentnames": json.dumps(proto.argnames),
 			"argumentdefaults": json.dumps(["false" if x == "bool" else "" for x in proto.argtypes]),
-			"warp": "true"
+			"warp": "true" if proto.turbo else "false"
 		}
 	}
 	return [1, proto.uid]
@@ -721,6 +764,36 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 				"topLevel": False,
 			}
 			return uid
+		elif expression.op == "abs":
+			blocks_json[uid] = {
+				"opcode": "operator_mathop",
+				"next": None,
+				"parent": parent,
+				"inputs": {
+					"NUM": serialise_arg(blocks_json, sprite, expression.value, uid),
+				},
+				"fields": {
+					"OPERATOR": ["abs", None]
+				},
+				"shadow": False,
+				"topLevel": False,
+			}
+			return uid
+		elif expression.op == "round":
+			blocks_json[uid] = {
+				"opcode": "operator_mathop",
+				"next": None,
+				"parent": parent,
+				"inputs": {
+					"NUM": serialise_arg(blocks_json, sprite, expression.value, uid),
+				},
+				"fields": {
+					"OPERATOR": ["round", None]
+				},
+				"shadow": False,
+				"topLevel": False,
+			}
+			return uid
 		elif expression.op == "listlen":
 			blocks_json[uid] = {
 				"opcode": "data_lengthoflist",
@@ -778,6 +851,42 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 	elif type(expression) is ast.Answer:
 		blocks_json[uid] = {
 			"opcode": "sensing_answer",
+			"next": None,
+			"parent": parent,
+			"inputs": {},
+			"fields": {},
+			"shadow": shadow,
+			"topLevel": False
+		}
+		return uid
+	
+	elif type(expression) is ast.MouseDown:
+		blocks_json[uid] = {
+			"opcode": "sensing_mousedown",
+			"next": None,
+			"parent": parent,
+			"inputs": {},
+			"fields": {},
+			"shadow": shadow,
+			"topLevel": False
+		}
+		return uid
+	
+	elif type(expression) is ast.MouseX:
+		blocks_json[uid] = {
+			"opcode": "sensing_mousex",
+			"next": None,
+			"parent": parent,
+			"inputs": {},
+			"fields": {},
+			"shadow": shadow,
+			"topLevel": False
+		}
+		return uid
+	
+	elif type(expression) is ast.MouseY:
+		blocks_json[uid] = {
+			"opcode": "sensing_mousey",
 			"next": None,
 			"parent": parent,
 			"inputs": {},

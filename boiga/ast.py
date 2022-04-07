@@ -52,6 +52,12 @@ class Expression():
 	
 	def __ceil__(self):
 		return UnaryOp("ceil", self)
+
+	def __round__(self):
+		return UnaryOp("round", self)
+	
+	def __abs__(self):
+		return UnaryOp("abs", self)
 	
 	def __rshift__(self, other):
 		if not type(other) is int:
@@ -102,6 +108,13 @@ class Literal(Expression):
 		#return f"Literal({self.value!r})"
 		return repr(self.value)
 
+
+class LiteralColour(Expression):
+	def __init__(self, value):
+		self.value = value
+
+	def __repr__(self):
+		return f"LiteralColour({self.value!r})"
 
 class BinaryOp(Expression):
 	def __init__(self, op, lval, rval):
@@ -249,6 +262,19 @@ class DaysSince2k(Expression):
 	def __init__(self):
 		pass
 
+class MouseDown(Expression):
+	type = "bool"
+	def __init__(self):
+		pass
+
+class MouseX(Expression):
+	def __init__(self):
+		pass
+
+class MouseY(Expression):
+	def __init__(self):
+		pass
+
 
 class Statement():
 	def __init__(self, op, **args):
@@ -324,10 +350,14 @@ class Hide(Statement):
 
 class SetEffect(Statement):
 	def __init__(self, effect, value):
-		self.op = "looks_seteffectto"
 		super().__init__("looks_seteffectto",
 			EFFECT=_ensure_expression(effect),
 			VALUE=_ensure_expression(value))
+
+class SetCostume(Statement):
+	def __init__(self, costume):
+		super().__init__("looks_switchcostumeto",
+			COSTUME=_ensure_expression(costume))
 
 # END LOOKS
 
@@ -352,7 +382,17 @@ class PenUp(Statement):
 # correct spellings only!
 class SetPenColour(Statement):
 	def __init__(self, colour):
-		super().__init__("pen_setPenColorToColor", COLOR=_ensure_expression(colour))
+		if type(colour) is int and colour < 0x1000000:
+			colour = LiteralColour(f"#{colour:06x}")
+		elif type(colour) is not LiteralColour:
+			colour = _ensure_expression(colour)+0 # TODO: only add zero if it's not an expression to begin with
+		super().__init__("pen_setPenColorToColor", COLOR=colour)
+
+def RGBA(r, g, b, a):
+	return r << 16 | g << 8 | b | a << 24
+
+def RGB(r, g, b):
+	return RGBA(r, g, b, 0)
 
 class SetPenSize(Statement):
 	def __init__(self, size):
@@ -469,6 +509,11 @@ class ProcVarBool(Expression):
 
 def on_flag(substack=None):
 	return [Statement("event_whenflagclicked")] + substack
+
+
+def on_press(key, substack=None):
+	# TODO: use enum for key, check the argument is actually an enum field
+	return [Statement("event_whenkeypressed", KEY_OPTION=str(key))] + substack
 
 
 def forever(do=None):
