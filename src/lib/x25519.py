@@ -3,13 +3,10 @@ from boiga.ast import *
 
 import math
 
-# compromise on code size, to squeeze out the last drops of perf
-MAX_PERF = False
-
 class X25519():
 	BASE_POINT = "0900000000000000000000000000000000000000000000000000000000000000"
 	
-	def __init__(self, cat):
+	def __init__(self, cat, utils, testing=False):
 		tmp = cat.new_var("tmp25519")
 
 		HEXBITS = cat.new_list("HEXBITS", [f"{i:04b}"[::-1] for i in range(16)])
@@ -59,16 +56,6 @@ class X25519():
 			]
 		]
 
-		"""
-		def realjoin(floats):
-			res = 0
-			shiftinator = 1
-			for i in range(12):
-				blah = int(floats[i] / rtotals[i])
-				res |= blah * shiftinator
-				shiftinator *= radices[i]
-			return res
-		"""
 		def fjoin(locals, out, inp): return [
 			out <= "",
 			locals.i[1:12+1] >> [
@@ -94,14 +81,11 @@ class X25519():
 		def bits2hex_le(locals, out, inp): return [
 			out <= "",
 			locals.i[:256:8] >> [
-				out <= out.join(Literal("0123456789abcdef")[sumchain([
-					inp[locals.i + j + 4] << j
-					for j in range(4)
-				])]).join(
-					Literal("0123456789abcdef")[sumchain([
-					inp[locals.i + j] << j
-					for j in range(4)
-				])])
+				locals.hextmp <= 0,
+				locals.j[:8] >> [
+					locals.hextmp <= locals.hextmp * 2 + inp[locals.i-locals.j+7]
+				],
+				out <= out.join(utils.HEX_LUT[locals.hextmp])
 			]
 		]
 
@@ -115,33 +99,6 @@ class X25519():
 			]))
 			for i in range(23)
 		]
-
-		def textbook_square(out, x):
-			code = []
-			for i in range(23):
-				start = max(0,  i + 1 - 12)
-				stop  = min(12, i + 1)
-				dist = stop - start
-				if dist & 1:
-					if dist > 1:
-						code.append(out.append(sumchain([
-							x[i - j] * x[j]
-							for j in range(start, start + dist // 2)
-						]) * 2 + x[start+dist//2] * x[start+dist//2]))
-					else:
-						code.append(out.append(sumchain([
-							x[i - j] * x[j]
-							for j in range(
-								max(0,  i + 1 - 12),
-								min(12, i + 1)
-							)
-						])))
-				else:
-					code.append(out.append(sumchain([
-						x[i - j] * x[j]
-						for j in range(start, start + dist // 2)
-					]) * 2))
-			return code
 
 		def carry_from(locals, arr, i):
 			r = 2.0**math.ceil((i+1)*21.25)
@@ -191,101 +148,43 @@ class X25519():
 			C[0] <= C[0] + (tmp * (19.0*(2**-255))),
 		]
 
-
-		@cat.proc_def("modmul_square_body", turbo=True)
-		def modmul_square_body(locals): return [
-			C.delete_all(),
-			textbook_square(C, A),
-
-			carry_from(locals, C, 10),
-			carry_from(locals, C, 11),
-
-			[
-				[
-					C[i-12] <= C[i-12] + (C[i] * (19.0*(2**-255))),
-					#C[i] <= 0.0
-				]
-				for i in range(12, 23)
-			],
-			#C[12] <= 0.0,
-
-			[
-				carry_from(locals, C, i)
-				for i in range(11)
-			],
-
-			#carry_from(locals, C, 11),
-			tmp <= (C[11] - (C[11] % (2.0**math.ceil((11+1)*21.25)))),
-			C[11] <= C[11] - (C[11] - (C[11] % (2.0**math.ceil((11+1)*21.25)))),
-			C[0] <= C[0] + (tmp * (19.0*(2**-255))),
-		]
-
-		@cat.proc_def("modmul_decode_output")
-		def modmul_decode_output(locals): return [
-			fjoin(locals, locals.out_bits, C),
-			bits2hex(locals, locals.out_hex, locals.out_bits)
-		]
+		if testing:
+			@cat.proc_def("modmul_decode_output")
+			def modmul_decode_output(locals): return [
+				fjoin(locals, locals.out_bits, C),
+				bits2hex(locals, locals.out_hex, locals.out_bits)
+			]
+			self.modmul_decode_output = modmul_decode_output
 
 		cpi = cat.new_var("cpi")
-		if MAX_PERF:
-			def int255cpy(dst, src): return [
-				dst.delete_all(),
-				[
-					dst.append(src[i])
-					for i in range(12)
-				]
-			] if dst.uid != src.uid else []
-
-			def int255add(dst, src_a, src_b): return [
-				dst.delete_all(),
-				[
-					dst.append(src_a[i] + src_b[i])
-					for i in range(12)
-				]
-			] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
-				dst[i] <= src_a[i] + src_b[i]
-				for i in range(12)
+		def int255cpy(dst, src): return [
+			dst.delete_all(),
+			cpi[1:12+1] >> [
+				dst.append(src[cpi-1])
 			]
+		] if dst.uid != src.uid else []
 
-			def int255sub(dst, src_a, src_b): return [
-				dst.delete_all(),
-				[
-					dst.append(src_a[i] - src_b[i])
-					for i in range(12)
-				]
-			] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
-				dst[i] <= src_a[i] + src_b[i]
-				for i in range(12)
+		def int255add(dst, src_a, src_b): return [
+			dst.delete_all(),
+			cpi[1:12+1] >> [
+				dst.append(src_a[cpi-1] + src_b[cpi-1])
 			]
-		else:
-			def int255cpy(dst, src): return [
-				dst.delete_all(),
-				cpi[1:12+1] >> [
-					dst.append(src[cpi-1])
-				]
-			] if dst.uid != src.uid else []
+		] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
+			cpi[1:12+1] >> [
+				dst[cpi-1] <= src_a[cpi-1] + src_b[cpi-1]
+			]
+		]
 
-			def int255add(dst, src_a, src_b): return [
-				dst.delete_all(),
-				cpi[1:12+1] >> [
-					dst.append(src_a[cpi-1] + src_b[cpi-1])
-				]
-			] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
-				cpi[1:12+1] >> [
-					dst[cpi-1] <= src_a[cpi-1] + src_b[cpi-1]
-				]
+		def int255sub(dst, src_a, src_b): return [
+			dst.delete_all(),
+			cpi[1:12+1] >> [
+				dst.append(src_a[cpi-1] - src_b[cpi-1])
 			]
-
-			def int255sub(dst, src_a, src_b): return [
-				dst.delete_all(),
-				cpi[1:12+1] >> [
-					dst.append(src_a[cpi-1] - src_b[cpi-1])
-				]
-			] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
-				cpi[1:12+1] >> [
-					dst[cpi-1] <= src_a[cpi-1] - src_b[cpi-1]
-				]
+		] if dst.uid != src_a.uid and dst.uid != src_b.uid else [
+			cpi[1:12+1] >> [
+				dst[cpi-1] <= src_a[cpi-1] - src_b[cpi-1]
 			]
+		]
 
 		def modmul_copyargs(dst, a, b): return [
 			#int255cpy(A, a),
@@ -305,13 +204,6 @@ class X25519():
 			int255cpy(dst, C)
 		]
 
-		def modmul_square_copyargs(dst, a): return [
-			int255cpy(A, a),
-			modmul_square_body(),
-			int255cpy(dst, C)
-		]
-
-
 		inv_tmp = cat.new_list("INV_TMP", [0]*12)
 		# input: A, output C
 		@cat.proc_def("x25519_invert", turbo=True)
@@ -320,7 +212,8 @@ class X25519():
 			int255cpy(C, A), # c = accumulator
 			locals.i[253:-1:-1] >> [
 				int255cpy(A, C),
-				modmul_square_body(), # C = C * C
+				int255cpy(B, C),
+				modmul_body(), # C = C * C
 				IF ((locals.i != 2).AND(locals.i != 4)) [
 					int255cpy(A, C),
 					int255cpy(B, inv_tmp),
@@ -330,22 +223,16 @@ class X25519():
 		]
 
 		# this is like, vaguely constant-time, probably
-		if not MAX_PERF:
-			def cswap(locals, swap, a, b): return [
-				locals.swapi[1:12+1] >> [
-					locals.swaptmp <= (a[locals.swapi-1] * swap) + (b[locals.swapi-1] * (Literal(1) - swap)),
-					a[locals.swapi-1] <= (b[locals.swapi-1] * swap) + (a[locals.swapi-1] * (Literal(1) - swap)),
-					b[locals.swapi-1] <= locals.swaptmp
-				]
+		def cswap(locals, swap, a, b, c, d): return [
+			locals.swapi[1:12+1] >> [
+				locals.swaptmp <= (a[locals.swapi-1] * swap) + (b[locals.swapi-1] * (Literal(1) - swap)),
+				a[locals.swapi-1] <= (b[locals.swapi-1] * swap) + (a[locals.swapi-1] * (Literal(1) - swap)),
+				b[locals.swapi-1] <= locals.swaptmp,
+				locals.swaptmp <= (c[locals.swapi-1] * swap) + (d[locals.swapi-1] * (Literal(1) - swap)),
+				c[locals.swapi-1] <= (d[locals.swapi-1] * swap) + (c[locals.swapi-1] * (Literal(1) - swap)),
+				d[locals.swapi-1] <= locals.swaptmp
 			]
-		else:
-			def cswap(locals, swap, a, b): return [
-				[
-					locals.swaptmp <= (a[i] * swap) + (b[i] * (Literal(1) - swap)),
-					a[i] <= (b[i] * swap) + (a[i] * (Literal(1) - swap)),
-					b[i] <= locals.swaptmp
-				] for i in range(12)
-			]
+		]
 
 		"""
 		def X25519(k, u):
@@ -441,8 +328,7 @@ class X25519():
 			locals.t[:255] >> [
 				locals.k_t <= locals.scalarbits[Literal(254)-locals.t],
 				locals.swap <= (locals.swap + locals.k_t) % 2,
-				cswap(locals, locals.swap, x_2, x_3),
-				cswap(locals, locals.swap, z_2, z_3),
+				cswap(locals, locals.swap, x_2, x_3, z_2, z_3),
 				locals.swap <= locals.k_t,
 
 				smA.delete_all(),
@@ -452,8 +338,8 @@ class X25519():
 					smB.append(x_2[cpi-1] - z_2[cpi-1])
 				],
 
-				modmul_square_copyargs(smAA, smA),
-				modmul_square_copyargs(smBB, smB),
+				modmul_copyargs(smAA, smA, smA),
+				modmul_copyargs(smBB, smB, smB),
 
 				smE.delete_all(),
 				smC.delete_all(),
@@ -468,7 +354,7 @@ class X25519():
 				modmul_copyargs(smCB, smC, smB),
 
 				int255add(x_3, smDA, smCB),
-				modmul_square_copyargs(x_3, x_3),
+				modmul_copyargs(x_3, x_3, x_3),
 
 				int255sub(z_3, smDA, smCB),
 				modmul_copyargs(z_3, z_3, z_3),
@@ -481,8 +367,7 @@ class X25519():
 				modmul_copyargs(z_2, smE, B),
 			],
 
-			cswap(locals, locals.swap, x_2, x_3),
-			cswap(locals, locals.swap, z_2, z_3),
+			cswap(locals, locals.swap, x_2, x_3, z_2, z_3),
 
 			int255cpy(A, z_2),
 			x25519_invert(),
@@ -496,23 +381,26 @@ class X25519():
 		]
 
 		# these are just exposed for testing
-		self.init_modmul = init_modmul
-		self.modmul_body = modmul_body
-		self.modmul_copyargs = modmul_copyargs
-		self.modmul_decode_output = modmul_decode_output
-		self.x25519_invert = x25519_invert
+		if testing:
+			self.init_modmul = init_modmul
+			self.modmul_body = modmul_body
+			self.modmul_copyargs = modmul_copyargs
+			self.x25519_invert = x25519_invert
 
 		# this is the actual API
 		self.scalarmult = x25519_scalarmult
 
 if __name__ == "__main__":
+	from .utils import Utils
+
 	project = Project(template="../test_files/Scratch Project.sb3")
 
 	cat = project.new_sprite("Sprite1")
 
 	stdout = project.stage.new_list("stdout", [], monitor=[0, 0, 480-2, 292])
 
-	x25519 = X25519(cat)
+	utils = Utils(cat)
+	x25519 = X25519(cat, utils, testing=True)
 
 	"""@cat.proc_def("benchmark_modmul")
 	def benchmark_modmul(locals): return [

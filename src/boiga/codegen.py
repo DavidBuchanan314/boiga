@@ -64,7 +64,9 @@ class Project():
 			open("DEBUG.json", "w").write(debug_json + "\n")
 
 			with zf.open("project.json", "w") as projfile:
-				projfile.write(json.dumps(project).encode())
+				json_blob = json.dumps(project).encode()
+				print(f"[*] project.json size: {len(json_blob)}")
+				projfile.write(json_blob)
 			
 			for asset_name in self.used_assets:
 				with zf.open(asset_name, "w") as f:
