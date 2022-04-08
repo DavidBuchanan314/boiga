@@ -506,7 +506,7 @@ class X25519():
 		self.scalarmult = x25519_scalarmult
 
 if __name__ == "__main__":
-	project = Project(template="test_files/Scratch Project.sb3")
+	project = Project(template="../test_files/Scratch Project.sb3")
 
 	cat = project.new_sprite("Sprite1")
 
@@ -607,4 +607,4 @@ if __name__ == "__main__":
 		#benchmark_modmul()
 	])
 
-	project.save("test.sb3", execute=False)
+	project.save("../test.sb3", execute=False)

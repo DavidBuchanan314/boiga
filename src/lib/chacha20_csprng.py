@@ -126,9 +126,9 @@ class CSPRNG():
 
 if __name__ == "__main__":
 	from boiga.codegen import Project
-	from utils import Utils
+	from .utils import Utils
 
-	project = Project(template="test_files/Scratch Project.sb3")
+	project = Project(template="../test_files/Scratch Project.sb3")
 
 	cat = project.new_sprite("Sprite1")
 	utils = Utils(cat)
@@ -164,4 +164,4 @@ if __name__ == "__main__":
 		AskAndWait(),
 	])
 
-	project.save("test.sb3", execute=False)
+	project.save("../test.sb3", execute=False)
