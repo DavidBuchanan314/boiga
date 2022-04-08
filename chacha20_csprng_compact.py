@@ -4,41 +4,9 @@ import struct
 
 
 class CSPRNG():
-	def __init__(self, cat):
-		tmp = cat.new_var("tmp")
-		tmp2 = cat.new_var("tmp2")
-		#tmp3 = cat.new_var("tmp3")
-
-		HEX_LUT = cat.new_list("HEX_LUT", [f"{x:02x}" for x in range(0x100)])
-
-
-
-		def rotr(x, n, nbits=32):
-			return (x >> n) + ((x % (1<<n)) << (nbits - n))
-
-		def rotl(x, n, nbits=32):
-			return rotr(x, nbits-n, nbits)
-
-		# note: we can elide the "+1" required to adjust for 1-indexing by simply chopping off the
-		# first entry of the table. Looking up the 0th item of a scratch array returns "", which is zero-ish
-		# when used in subsequent math ops
-		# note also: the array index ends up with a -1+1 on the end, which the ast optimisation pass strips out
-		XOR_LUT = cat.new_list("XOR_LUT", [a^b for a in range(0x100) for b in range(0x100)][1:])
-		def bitxor(a, b, nbits=32):
-			result = XOR_LUT[(a&0xff)*256+(b&0xff)-1]
-			for i in range(8, nbits, 8):
-				result += XOR_LUT[((a>>i)&0xff)*256+((b>>i)&0xff)-1] << i
-			return result
-
-		"""
-		CHACHA20 CSPRNG
-
-		Design goals:
-
-		Compact code
-		Reasonable perf
-		Reasonable security
-		"""
+	def __init__(self, cat, utils):
+		tmp = cat.new_var("csprng_tmp")
+		tmp2 = cat.new_var("csprng_tmp2")
 
 		CHACHA20_INIT_STATE = list(struct.unpack("<IIII", b"expand 32-byte k")) + [0]*12
 		rng_state = cat.new_list("rng_state", CHACHA20_INIT_STATE)
@@ -79,7 +47,7 @@ class CSPRNG():
 					tmp <= rng_tmp[RNG_LUT[locals.i+2]-1],
 
 					tmp2 <= (rng_tmp[RNG_LUT[locals.i+0]-1] + rng_tmp[RNG_LUT[locals.i+1]-1]) & 0xffff_ffff,
-					tmp <= bitxor(tmp, tmp2),
+					tmp <= utils.bitxor(tmp, tmp2),
 					rng_tmp[RNG_LUT[locals.i+2]-1] <= (tmp // RNG_LUT[locals.i+4]) + ((tmp % RNG_LUT[locals.i+4]) * RNG_LUT[locals.i+3]),
 					rng_tmp[RNG_LUT[locals.i+0]-1] <= tmp2,
 
@@ -149,7 +117,7 @@ class CSPRNG():
 			rng_get_bytes(length),
 			locals.hex_out <= "",
 			locals.i[:length] >> [
-				locals.hex_out <= locals.hex_out.join(HEX_LUT[rng_bytes_out[locals.i]])
+				locals.hex_out <= locals.hex_out.join(utils.HEX_LUT[rng_bytes_out[locals.i]])
 			]
 		]
 
@@ -158,14 +126,15 @@ class CSPRNG():
 
 if __name__ == "__main__":
 	from boiga.codegen import Project
+	from utils import Utils
 
 	project = Project(template="test_files/Scratch Project.sb3")
 
 	cat = project.new_sprite("Sprite1")
+	utils = Utils(cat)
+	csprng = CSPRNG(cat, utils)
 
 	stdout = project.stage.new_list("stdout", [], monitor=[0, 0, 480-2, 292])
-
-	csprng = CSPRNG(cat)
 
 	cat.on_flag([
 		stdout.delete_all(),
