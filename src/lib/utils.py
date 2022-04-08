@@ -34,6 +34,9 @@ class Utils():
 		self.CHACHA_LUT = cat.new_list("CHACHA_LUT", magic)
 		self.CHACHA_LUT_LEN = len(magic)
 	
+	def bytexor(self, a, b):
+		return self.XOR_LUT[a*256+b-1]
+
 	def bitxor(self, a, b, nbits=32):
 		result = self.XOR_LUT[(a&0xff)*256+(b&0xff)-1]
 		for i in range(8, nbits, 8):
