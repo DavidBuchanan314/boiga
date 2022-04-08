@@ -275,6 +275,9 @@ class MouseY(Expression):
 	def __init__(self):
 		pass
 
+class CostumeNumber(Expression):
+	def __init__(self):
+		pass
 
 class Statement():
 	def __init__(self, op, **args):

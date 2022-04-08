@@ -895,5 +895,19 @@ def serialise_expression(blocks_json, sprite, expression, parent, shadow=False):
 			"topLevel": False
 		}
 		return uid
+	
+	elif type(expression) is ast.CostumeNumber:
+		blocks_json[uid] = {
+			"opcode": "looks_costumenumbername",
+			"next": None,
+			"parent": parent,
+			"inputs": {},
+			"fields": {
+				"NUMBER_NAME": ["number", None]
+			},
+			"shadow": shadow,
+			"topLevel": False
+		}
+		return uid
 
 	raise Exception(f"Unable to serialise expression {expression!r}")

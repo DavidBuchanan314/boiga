@@ -1,13 +1,11 @@
 from boiga.codegen import Project
 from boiga.ast import *
 
-from .chacha20_csprng import CSPRNG
-from .x25519 import X25519
 from .utils import Utils
 
 
 class Chat():
-	def __init__(self, cat):
+	def __init__(self, cat, utils):
 		overlay = cat.project.new_sprite("Overlay")
 		overlay.add_costume(f"overlay", open(f"../assets/overlay.svg", "rb").read(), "svg")
 
@@ -242,6 +240,12 @@ class Chat():
 			])
 		]
 
+		@cat.proc_def("wait_for_animation", turbo=False)
+		def wait_for_animation(locals): return [
+			repeatuntil((scrollpos == scrolltarget).AND(velocity == 0))[[]],
+			Wait(0),
+		]
+
 		cat.on_press("up arrow", [
 			scrollpos.changeby(-15),
 			scrolltarget <= scrollpos,
@@ -307,6 +311,11 @@ class Chat():
 				chatlog.append(sender.join(locals.line)),
 			],
 
+			# handle zero-length messages
+			IF (message == "") [
+				chatlog.append(sender.join(" ")),
+			],
+
 			scrolltarget <= get_max_scroll(),
 		]
 
@@ -323,16 +332,28 @@ class Chat():
 			chatlog.delete_all(),
 		]
 
+		@cat.proc_def("string_to_hex [string]")
+		def string_to_hex(locals, string): return [
+			locals.hex_out <= "",
+			locals.i[:string.len()] >> [
+				SetCostume(Literal("IBM_").join(string[locals.i])),
+				locals.hex_out <= locals.hex_out.join(utils.HEX_LUT[CostumeNumber() + 0x1d])
+			]
+		]
+
 		#self.chatlog = chatlog
 		self.init = init_chat
 		self.new_message = new_message
 		self.gui_loop = gui_loop
+		self.wait_for_animation = wait_for_animation
+		self.string_to_hex = string_to_hex
 
 if __name__ == "__main__":
 	project = Project(template="../test_files/Scratch Project.sb3")
 
 	cat = project.new_sprite("Sprite1")
-	chat = Chat(cat)
+	utils = Utils(cat)
+	chat = Chat(cat, utils)
 
 	cat.on_flag([
 		chat.init(),
@@ -351,7 +372,8 @@ if __name__ == "__main__":
 			AskAndWait(),
 			chat.new_message("<", Answer()),
 			Wait(1),
-			chat.new_message(">", Literal("You said: ").join(Answer())),
+			chat.string_to_hex(Answer()),
+			chat.new_message(">", Literal("You said: ").join(chat.string_to_hex.hex_out)),
 		])
 	])
 

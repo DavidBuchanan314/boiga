@@ -11,27 +11,6 @@ class CSPRNG():
 		CHACHA20_INIT_STATE = list(struct.unpack("<IIII", b"expand 32-byte k")) + [0]*12
 		rng_state = cat.new_list("rng_state", CHACHA20_INIT_STATE)
 		rng_tmp = cat.new_list("rng_tmp", [])
-		QR_OFFSETS = [
-			#  Odd round
-			0, 4,  8, 12,  # 1st column
-			1, 5,  9, 13,  # 2nd column
-			2, 6, 10, 14,  # 3rd column
-			3, 7, 11, 15,  # 4th column
-			# Even round
-			0, 5, 10, 15,  # diagonal 1 (main diagonal)
-			1, 6, 11, 12,  # diagonal 2
-			2, 7,  8, 13,  # diagonal 3
-			3, 4,  9, 14,  # diagonal 4
-		]
-		magic = []
-		for i in range(0, len(QR_OFFSETS), 4):
-			a, b, c, d = [x+1 for x in QR_OFFSETS[i:i+4]]
-			magic += [a, b, d, 2**16, 2**(32-16)]
-			magic += [c, d, b, 2**12, 2**(32-12)]
-			magic += [a, b, d, 2**8, 2**(32-8)]
-			magic += [c, d, b, 2**7, 2**(32-7)]
-
-		RNG_LUT = cat.new_list("RNG_LUT", magic)
 
 		@cat.proc_def("chacha20_rng_core")
 		def chacha20_rng_core(locals): return [
@@ -44,14 +23,20 @@ class CSPRNG():
 				],
 				locals.i <= 0,
 				repeatn(20*4*4) [
-					tmp <= rng_tmp[RNG_LUT[locals.i+2]-1],
+					tmp <= rng_tmp[utils.CHACHA_LUT[locals.i+2]-1],
 
-					tmp2 <= (rng_tmp[RNG_LUT[locals.i+0]-1] + rng_tmp[RNG_LUT[locals.i+1]-1]) & 0xffff_ffff,
+					tmp2 <= (rng_tmp[utils.CHACHA_LUT[locals.i+0]-1] +
+						rng_tmp[utils.CHACHA_LUT[locals.i+1]-1]) & 0xffff_ffff,
+
 					tmp <= utils.bitxor(tmp, tmp2),
-					rng_tmp[RNG_LUT[locals.i+2]-1] <= (tmp // RNG_LUT[locals.i+4]) + ((tmp % RNG_LUT[locals.i+4]) * RNG_LUT[locals.i+3]),
-					rng_tmp[RNG_LUT[locals.i+0]-1] <= tmp2,
 
-					locals.i <= (locals.i + 5) % len(magic),
+					rng_tmp[utils.CHACHA_LUT[locals.i+2]-1] <=
+						(tmp // utils.CHACHA_LUT[locals.i+4]) +
+						((tmp % utils.CHACHA_LUT[locals.i+4]) * utils.CHACHA_LUT[locals.i+3]),
+
+					rng_tmp[utils.CHACHA_LUT[locals.i+0]-1] <= tmp2,
+
+					locals.i <= (locals.i + 5) % utils.CHACHA_LUT_LEN,
 				],
 				locals.i[1:16+1] >> [
 					rng_tmp[locals.i-1] <= (rng_tmp[locals.i-1] + rng_state[locals.i-1]) & 0xffff_ffff
