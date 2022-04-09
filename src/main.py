@@ -75,7 +75,7 @@ cat.on_flag([
 
 	chachapoly1305.encrypt(session_key, "00000000c001d00d00000000", "07526574723069640000000000000000000000000000000000000000000000000000000000000000000000000000"),
 
-	chat.new_message(">", Literal("Encrypted: ").join(x25519_client_pub).join(session_id).join(chachapoly1305.encrypt.ct_out).join(chachapoly1305.encrypt.tag_out)),
+	chat.new_message(">", Literal("Encrypted: ").join(x25519_client_pub).join(session_id).join("00000000").join(chachapoly1305.encrypt.ct_out).join(chachapoly1305.encrypt.tag_out)),
 	chat.wait_for_animation(),
 
 	forever([

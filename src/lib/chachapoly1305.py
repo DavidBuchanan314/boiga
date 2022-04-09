@@ -14,9 +14,11 @@ class ChaChaPoly1305():
 		RADICES = cat.new_list("P1305RADICES", [22, 22, 21] * 4)
 		RTOTALS = cat.new_list("P1305RTOTALS", [float(x) for x in rtotals])
 
-		A = cat.new_list("PA")
-		B = cat.new_list("PB")
-		C = cat.new_list("PC")
+		# note: these collide with those declared by x25519, but
+		# they aren't used at the same time (probably, lol)
+		A = cat.new_list("A")
+		B = cat.new_list("B")
+		C = cat.new_list("C")
 
 		def extract_bits_from_hex(hexbuf, offset, start, length):
 			start_digit = start // 4
@@ -39,8 +41,6 @@ class ChaChaPoly1305():
 			return hexstring
 
 
-
-		#split_buf = cat.new_list("poly1305_split_buf", [])
 		# note: offset is nibble index, and must be a multiple of 2
 		@cat.proc_def("poly1305_split [block_hex] [offset]")
 		def poly1305_split(locals, block_hex, offset): return [
@@ -244,8 +244,6 @@ if __name__ == "__main__":
 	tmp = cat.new_var("testtmp")
 
 	from Crypto.Cipher import ChaCha20_Poly1305
-	import struct
-
 
 	test_nonce = bytes(12)
 	test_key = bytes.fromhex("7b9a4bc2c6b951879318e7ffcc92f53938790663109224f75acba604bc598b25")
@@ -260,7 +258,8 @@ if __name__ == "__main__":
 		chachapoly1305.chacha20_poly1305(
 			test_key.hex(),
 			test_nonce.hex(),
-			chachapoly_ct.hex()),
+			chachapoly_ct.hex()
+		),
 		stdout.append(chachapoly1305.join.hex_out),
 		IF (chachapoly1305.join.hex_out == chachapoly_tag.hex()) [
 			stdout.append("Test passed!"),
@@ -269,7 +268,8 @@ if __name__ == "__main__":
 		chachapoly1305.encrypt(
 			test_key.hex(),
 			test_nonce.hex(),
-			msg.hex()),
+			msg.hex()
+		),
 		stdout.append(chachapoly1305.encrypt.ct_out.join(chachapoly1305.encrypt.tag_out)),
 		IF (chachapoly1305.encrypt.ct_out.join(chachapoly1305.encrypt.tag_out) == (chachapoly_ct+chachapoly_tag).hex()) [
 			stdout.append("Test passed!"),
@@ -279,7 +279,8 @@ if __name__ == "__main__":
 			test_key.hex(),
 			test_nonce.hex(),
 			chachapoly1305.encrypt.ct_out,
-			chachapoly1305.encrypt.tag_out),
+			chachapoly1305.encrypt.tag_out
+		),
 		stdout.append(chachapoly1305.decrypt.msg_valid),
 		stdout.append(chachapoly1305.decrypt.hex_out),
 		IF ((chachapoly1305.decrypt.msg_valid == "true").AND(chachapoly1305.decrypt.hex_out == msg.hex())) [
@@ -288,5 +289,3 @@ if __name__ == "__main__":
 	])
 
 	project.save("../test.sb3", execute=False)
-	# 547b288668014e8b9ee8263c8fab7b5e
-	# 547be88568f14d8b9ce8263c8fab7b5e
