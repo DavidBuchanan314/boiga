@@ -24,7 +24,11 @@ class BLAKE2s():
 		tmp = cat.new_var("blake2s_tmp")
 		tmp2 = cat.new_var("blake2s_tmp2")
 
+		# just for debugging!
+		#stdout = cat.project.stage.new_list("stdout", [], monitor=[0, 0, 480-2, 292])
+
 		state = cat.new_list("blake2s_state", [0]*16) #monitor=[0,0,200,320])
+		state_h = cat.new_list("blake2s_state_h", [0]*8)
 		magic = []
 		for x in [
 			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -44,8 +48,11 @@ class BLAKE2s():
 
 		@cat.proc_def("blake2s_core [t] [last]")
 		def blake2s_core(locals, t, last): return [
+				locals.i[1:8+1] >> [
+					state[locals.i-1] <= state_h[locals.i-1]
+				],
 				[state[8+i] <= self.IV[i] for i in range(4)],
-				state[12] <= utils.bitxor(Literal(self.IV[4]), t),
+				state[12] <= utils.bitxor(self.IV[4], t), # TODO: optimise xor for constant
 				state[13] <= self.IV[5],
 				IF (last == 1, [
 					state[14] <= self.IV[6] ^ 0xffff_ffff,
@@ -74,7 +81,7 @@ class BLAKE2s():
 					locals.j.changeby(1),
 				],
 				locals.i[1:8+1] >> [
-					state[locals.i-1] <= utils.bitxor(state[locals.i-1], state[locals.i-1+8])
+					state_h[locals.i-1] <= utils.bitxor3(state_h[locals.i-1], state[locals.i-1], state[locals.i-1+8]),
 				],
 			]
 
@@ -82,17 +89,17 @@ class BLAKE2s():
 		@cat.proc_def("blake2s_hash [message_hex]")
 		def blake2s_hash(locals, message_hex): return [
 			locals.padded <= message_hex.join("0"*128),
-			state[0] <= self.IV[0] ^ 0x01010020, # static parameter block (rest is zeroes)
-			[state[i] <= self.IV[i] for i in range(1,8)],
+			state_h[0] <= self.IV[0] ^ 0x01010020, # static parameter block (rest is zeroes)
+			[state_h[i] <= self.IV[i] for i in range(1,8)],
 
 			locals.num_blocks <= math.ceil(message_hex.len()/(64*2)),
 			locals.t <= 0,
 			locals.i[:locals.num_blocks] >> [
 				IF (locals.i == locals.num_blocks - 1, [
 					locals.last <= 1,
-					locals.block_len <= (message_hex.len()/2) - ((locals.num_blocks-1)*64)
+					locals.t.changeby((message_hex.len()/2) - ((locals.num_blocks-1)*64))
 				]).ELSE([
-					locals.block_len <= 64,
+					locals.t.changeby(64), # todo, don't bother with block_len and add directly to t
 					locals.last <= 0
 				]),
 				msg.delete_all(),
@@ -103,15 +110,14 @@ class BLAKE2s():
 					],
 					msg.append(Literal("0x0").join(locals.tmp))
 				],
-				locals.t.changeby(locals.block_len),
 				blake2s_core(locals.t, locals.last),
 			],
 			locals.hex_out <= "",
 			locals.i[1:8+1] >> [
-				locals.hex_out <= locals.hex_out.join(utils.HEX_LUT[state[locals.i-1] & 0xFF])
-					.join(utils.HEX_LUT[(state[locals.i-1] >> 8) & 0xFF])
-					.join(utils.HEX_LUT[(state[locals.i-1] >> 16) & 0xFF])
-					.join(utils.HEX_LUT[(state[locals.i-1] >> 24) & 0xFF])
+				locals.hex_out <= locals.hex_out.join(utils.HEX_LUT[state_h[locals.i-1] & 0xFF])
+					.join(utils.HEX_LUT[(state_h[locals.i-1] >> 8) & 0xFF])
+					.join(utils.HEX_LUT[(state_h[locals.i-1] >> 16) & 0xFF])
+					.join(utils.HEX_LUT[(state_h[locals.i-1] >> 24) & 0xFF])
 			]
 		]
 
@@ -143,7 +149,7 @@ if __name__ == "__main__":
 			chat.wait_for_animation(),
 			chat.string_to_hex(Answer()),
 			blake2s.hash(chat.string_to_hex.hex_out),
-			chat.new_message(">", Literal("BLAKE2S(").join(Answer()).join(") = ").join(blake2s.hash.hex_out)),
+			chat.new_message(">", Literal("BLAKE2s(").join(Answer()).join(") = ").join(blake2s.hash.hex_out)),
 		])
 	])
 	"""
@@ -152,13 +158,25 @@ if __name__ == "__main__":
 	cat.on_flag([
 		blake2s.hash(b"hello".hex()),
 		chat.new_message(">", blake2s.hash.hex_out),
-		#blake2s.hash((b"A"*64).hex()),
-		#chat.new_message(">", blake2s.hash.hex_out),
-		#blake2s.hash((b"A"*128).hex()),
-		#chat.new_message(">", blake2s.hash.hex_out),
-		#blake2s.hash((b"A"*32*3).hex()),
-		#chat.new_message(">", blake2s.hash.hex_out),
+		blake2s.hash((b"A"*64).hex()),
+		chat.new_message(">", blake2s.hash.hex_out),
+		blake2s.hash((b"A"*128).hex()),
+		chat.new_message(">", blake2s.hash.hex_out),
+		blake2s.hash((b"A"*32*3).hex()),
+		chat.new_message(">", blake2s.hash.hex_out),
 	])
+	from cryptography.hazmat.primitives import hashes
+
+	def blake2s(seed):
+		digest = hashes.Hash(hashes.BLAKE2s(32))
+		digest.update(seed)
+		return digest.finalize()
+
+	print(blake2s(b"hello").hex())
+	print(blake2s(b"A"*64).hex())
+	print(blake2s(b"A"*128).hex())
+	print(blake2s(b"A"*32*3).hex())
+
 	# 19213bacc58dee6dbde3ceb9a47cbb330b3d86f8cca8997eb00be456f140ca25
 	
 

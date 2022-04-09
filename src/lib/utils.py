@@ -38,7 +38,13 @@ class Utils():
 		return self.XOR_LUT[a*256+b-1]
 
 	def bitxor(self, a, b, nbits=32):
-		result = self.XOR_LUT[(a&0xff)*256+(b&0xff)-1]
+		result = self.XOR_LUT[ensure_expression((a&0xff)*256)+(b&0xff)-1]
 		for i in range(8, nbits, 8):
-			result += self.XOR_LUT[((a>>i)&0xff)*256+((b>>i)&0xff)-1] << i
+			result += self.XOR_LUT[ensure_expression(((a>>i)&0xff)*256)+((b>>i)&0xff)-1] << i
+		return result
+
+	def bitxor3(self, a, b, c, nbits=32):
+		result = self.XOR_LUT[(a&0xff)*256+self.XOR_LUT[(b&0xff)*256+(c&0xff)-1]-1]
+		for i in range(8, nbits, 8):
+			result += self.XOR_LUT[((a>>i)&0xff)*256+self.XOR_LUT[((b>>i)&0xff)*256+((c>>i)&0xff)-1]-1] << i
 		return result

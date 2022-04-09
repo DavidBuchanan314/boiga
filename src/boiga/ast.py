@@ -1,7 +1,7 @@
 import math
 
 
-def _ensure_expression(value):
+def ensure_expression(value):
 	if issubclass(type(value), Expression):
 		return value
 	if type(value) in [str, int, float]:
@@ -78,7 +78,7 @@ class Expression():
 		return self % (other + 1)
 	
 	def __getitem__(self, other):
-		return BinaryOp("[]", _ensure_expression(other+1).simplified(), self)
+		return BinaryOp("[]", ensure_expression(other+1).simplified(), self)
 
 	def len(self):
 		return UnaryOp("len", self)
@@ -119,8 +119,8 @@ class LiteralColour(Expression):
 class BinaryOp(Expression):
 	def __init__(self, op, lval, rval):
 		self.op = op
-		self.lval = _ensure_expression(lval)
-		self.rval = _ensure_expression(rval)
+		self.lval = ensure_expression(lval)
+		self.rval = ensure_expression(rval)
 
 		if op in [">", "<", "==", "&&", "||"]:
 			self.type = "bool"
@@ -160,7 +160,7 @@ class BinaryOp(Expression):
 class UnaryOp(Expression):
 	def __init__(self, op, value):
 		self.op = op
-		self.value = _ensure_expression(value)
+		self.value = ensure_expression(value)
 
 		if op == "!":
 			self.type = "bool"
@@ -176,7 +176,7 @@ class Var(Expression):
 		self.uid = uid
 	
 	def __le__(self, other):
-		other = _ensure_expression(other)
+		other = ensure_expression(other)
 
 		# If other is (self+x) or (x+self), optimise to "change by"
 		if type(other) is BinaryOp and other.op == "+":
@@ -196,7 +196,7 @@ class Var(Expression):
 		return VarRangeIterationHack(self, _slice.start, _slice.stop, _slice.step)
 
 	def changeby(self, other):
-		return Statement("data_changevariableby", VARIABLE=self, VALUE=_ensure_expression(other))
+		return Statement("data_changevariableby", VARIABLE=self, VALUE=ensure_expression(other))
 
 	def __repr__(self):
 		return f"Var({self.sprite.name}: {self.name})"
@@ -221,13 +221,13 @@ class List(Expression):
 		self.uid = uid
 	
 	def append(self, other):
-		return Statement("data_addtolist", LIST=self, ITEM=_ensure_expression(other))
+		return Statement("data_addtolist", LIST=self, ITEM=ensure_expression(other))
 
 	def delete_all(self):
 		return Statement("data_deletealloflist", LIST=self)
 	
 	def delete_at(self, other):
-		return Statement("data_deleteoflist", LIST=self, INDEX=(_ensure_expression(other)+1).simplified())
+		return Statement("data_deleteoflist", LIST=self, INDEX=(ensure_expression(other)+1).simplified())
 
 	def len(self):
 		return UnaryOp("listlen", self)
@@ -239,20 +239,20 @@ class List(Expression):
 		return f"ListVar({self.sprite.name}: {self.name})"
 	
 	def __getitem__(self, index):
-		return ListIndex(self, (_ensure_expression(index)+1).simplified())
+		return ListIndex(self, (ensure_expression(index)+1).simplified())
 
 class ListItemNum(Expression):
 	def __init__(self, list_, item):
 		self.list = list_
-		self.item = _ensure_expression(item)
+		self.item = ensure_expression(item)
 
 class ListIndex(Expression):
 	def __init__(self, list_, index):
 		self.list = list_
-		self.index = _ensure_expression(index)
+		self.index = ensure_expression(index)
 	
 	def __le__(self, other):
-		other = _ensure_expression(other)
+		other = ensure_expression(other)
 		return Statement("data_replaceitemoflist", LIST=self.list, INDEX=self.index, ITEM=other)
 	
 	def __repr__(self):
@@ -289,23 +289,23 @@ class Statement():
 
 class IfStatement(Statement):
 	def __init__(self, condition, then):
-		super().__init__("control_if", CONDITION=_ensure_expression(condition), SUBSTACK=then)
+		super().__init__("control_if", CONDITION=ensure_expression(condition), SUBSTACK=then)
 	
 	def ELSE(self, do):
 		return IfElseStatement(self.args["CONDITION"], self.args["SUBSTACK"], do)
 
 class IfElseStatement(Statement):
 	def __init__(self, condition, then, elsedo):
-		super().__init__("control_if_else", CONDITION=_ensure_expression(condition), SUBSTACK=then, SUBSTACK2=elsedo)
+		super().__init__("control_if_else", CONDITION=ensure_expression(condition), SUBSTACK=then, SUBSTACK2=elsedo)
 
 class Wait(Statement):
 	def __init__(self, duration):
-		super().__init__("control_wait", DURATION=_ensure_expression(duration))
+		super().__init__("control_wait", DURATION=ensure_expression(duration))
 
 class AskAndWait(Statement):
 	def __init__(self, prompt=""):
 		self.op = "sensing_askandwait"
-		self.prompt = _ensure_expression(prompt)
+		self.prompt = ensure_expression(prompt)
 
 class Answer(Expression):
 	def __init__(self):
@@ -316,28 +316,28 @@ class Answer(Expression):
 class SetXYPos(Statement):
 	def __init__(self, x, y):
 		super().__init__("motion_gotoxy",
-			X=_ensure_expression(x),
-			Y=_ensure_expression(y))
+			X=ensure_expression(x),
+			Y=ensure_expression(y))
 
 class ChangeXPos(Statement):
 	def __init__(self, x):
 		super().__init__("motion_changexby",
-			DX=_ensure_expression(x))
+			DX=ensure_expression(x))
 
 class SetXPos(Statement):
 	def __init__(self, x):
 		super().__init__("motion_setx",
-			X=_ensure_expression(x))
+			X=ensure_expression(x))
 
 class ChangeYPos(Statement):
 	def __init__(self, y):
 		super().__init__("motion_changeyby",
-			DY=_ensure_expression(y))
+			DY=ensure_expression(y))
 
 class SetYPos(Statement):
 	def __init__(self, y):
 		super().__init__("motion_sety",
-			Y=_ensure_expression(y))
+			Y=ensure_expression(y))
 
 # END MOTION
 
@@ -354,13 +354,13 @@ class Hide(Statement):
 class SetEffect(Statement):
 	def __init__(self, effect, value):
 		super().__init__("looks_seteffectto",
-			EFFECT=_ensure_expression(effect),
-			VALUE=_ensure_expression(value))
+			EFFECT=ensure_expression(effect),
+			VALUE=ensure_expression(value))
 
 class SetCostume(Statement):
 	def __init__(self, costume):
 		super().__init__("looks_switchcostumeto",
-			COSTUME=_ensure_expression(costume))
+			COSTUME=ensure_expression(costume))
 
 # END LOOKS
 
@@ -388,7 +388,7 @@ class SetPenColour(Statement):
 		if type(colour) is int and colour < 0x1000000:
 			colour = LiteralColour(f"#{colour:06x}")
 		elif type(colour) is not LiteralColour:
-			colour = _ensure_expression(colour)+0 # TODO: only add zero if it's not an expression to begin with
+			colour = ensure_expression(colour)+0 # TODO: only add zero if it's not an expression to begin with
 		super().__init__("pen_setPenColorToColor", COLOR=colour)
 
 def RGBA(r, g, b, a):
@@ -399,7 +399,7 @@ def RGB(r, g, b):
 
 class SetPenSize(Statement):
 	def __init__(self, size):
-		super().__init__("pen_setPenSizeTo", SIZE=_ensure_expression(size))
+		super().__init__("pen_setPenSizeTo", SIZE=ensure_expression(size))
 
  # END PEN
 
@@ -475,7 +475,7 @@ class ProcProto(Statement):
 class ProcCall(Statement):
 	def __init__(self, proc, args, turbo=True):
 		self.proc = proc
-		args = list(map(_ensure_expression, args))
+		args = list(map(ensure_expression, args))
 
 		for arg, argtype in zip(args, proc.argtypes):
 			if argtype == "bool" and arg.type != "bool":
@@ -528,12 +528,12 @@ def forever(do=None):
 def repeatn(times, body=None):
 	if body is None:
 		return getitem_hack(repeatn, times)
-	return Statement("control_repeat", TIMES=_ensure_expression(times), SUBSTACK=body)
+	return Statement("control_repeat", TIMES=ensure_expression(times), SUBSTACK=body)
 
 def repeatuntil(cond, body=None):
 	if body is None:
 		return getitem_hack(repeatuntil, cond)
-	return Statement("control_repeat_until", CONDITION=_ensure_expression(cond), SUBSTACK=body)
+	return Statement("control_repeat_until", CONDITION=ensure_expression(cond), SUBSTACK=body)
 
 def getitem_hack(fn, *args):
 	class GetitemHack():

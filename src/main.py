@@ -7,7 +7,7 @@ from lib.chacha20 import ChaCha20
 from lib.chachapoly1305 import ChaChaPoly1305
 from lib.utils import Utils
 from lib.chat import Chat
-from lib.blake3 import BLAKE3
+from lib.blake2s import BLAKE2s
 
 project = Project(template="../test_files/Scratch Project.sb3")
 
@@ -15,7 +15,7 @@ cat = project.new_sprite("Sprite1")
 utils = Utils(cat)
 csprng = CSPRNG(cat, utils)
 x25519 = X25519(cat, utils)
-blake3 = BLAKE3(cat, utils)
+blake2s = BLAKE2s(cat, utils)
 chacha20 = ChaCha20(cat, utils)
 chachapoly1305 = ChaChaPoly1305(cat, chacha20, utils)
 chat = Chat(cat, utils)
@@ -64,8 +64,8 @@ cat.on_flag([
 	chat.new_message(">", Literal("Shared secret: ").join(x25519_shared_secret)),
 	chat.wait_for_animation(),
 
-	blake3.hash(x25519_shared_secret.join(x25519_client_pub).join(X25519_SERVER_PUB)),
-	session_key <= blake3.hash.hex_out,
+	blake2s.hash(x25519_shared_secret.join(x25519_client_pub).join(X25519_SERVER_PUB)),
+	session_key <= blake2s.hash.hex_out,
 
 	chat.new_message(">", Literal("Session key: ").join(session_key)),
 	chat.wait_for_animation(),
