@@ -3,6 +3,8 @@ from boiga.ast import *
 
 from lib.chacha20_csprng import CSPRNG
 from lib.x25519 import X25519
+from lib.chacha20 import ChaCha20
+from lib.chachapoly1305 import ChaChaPoly1305
 from lib.utils import Utils
 from lib.chat import Chat
 from lib.blake3 import BLAKE3
@@ -14,6 +16,8 @@ utils = Utils(cat)
 csprng = CSPRNG(cat, utils)
 x25519 = X25519(cat, utils)
 blake3 = BLAKE3(cat, utils)
+chacha20 = ChaCha20(cat, utils)
+chachapoly1305 = ChaChaPoly1305(cat, chacha20, utils)
 chat = Chat(cat, utils)
 
 cat.on_flag([
@@ -28,9 +32,11 @@ x25519_client_priv = cat.new_var("x25519_client_priv")
 x25519_client_pub = cat.new_var("x25519_client_pub")
 x25519_shared_secret = cat.new_var("x25519_shared_secret")
 session_key = cat.new_var("session_key")
+session_id = cat.new_var("session_id")
 
 DETERMINISTIC = True
 DETERMINISTIC_KEY = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+DETERMINISTIC_SESSID = "c001d00d"
 
 cat.on_flag([
 	chat.new_message(">", "Initialising CSPRNG... (gathering entropy)"),
@@ -62,6 +68,14 @@ cat.on_flag([
 	session_key <= blake3.hash.hex_out,
 
 	chat.new_message(">", Literal("Session key: ").join(session_key)),
+	chat.wait_for_animation(),
+
+	csprng.rng_get_hex(4),
+	session_id <= DETERMINISTIC_SESSID if DETERMINISTIC else csprng.rng_get_hex.hex_out,
+
+	chachapoly1305.encrypt(session_key, "00000000c001d00d00000000", "07526574723069640000000000000000000000000000000000000000000000000000000000000000000000000000"),
+
+	chat.new_message(">", Literal("Encrypted: ").join(x25519_client_pub).join(session_id).join(chachapoly1305.encrypt.ct_out).join(chachapoly1305.encrypt.tag_out)),
 	chat.wait_for_animation(),
 
 	forever([

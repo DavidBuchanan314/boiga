@@ -11,7 +11,7 @@ class ChaCha20():
 		state_tmp = cat.new_list("chacha_stmp", [])
 		tmp_buf = cat.new_list("chacha_tmp_buf", [])
 
-		@cat.proc_def("chacha20_rng_core")
+		@cat.proc_def("chacha20_core")
 		def chacha20_core(locals): return [
 			state_tmp.delete_all(),
 			locals.i[1:16+1] >> [
