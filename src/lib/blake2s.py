@@ -92,7 +92,7 @@ class BLAKE2s():
 			state_h[0] <= self.IV[0] ^ 0x01010020, # static parameter block (rest is zeroes)
 			[state_h[i] <= self.IV[i] for i in range(1,8)],
 
-			locals.num_blocks <= math.ceil(message_hex.len()/(64*2)),
+			locals.num_blocks <= math.ceil(message_hex.len()/(64*2)) + (locals.message_hex.len() == 0),
 			locals.t <= 0,
 			locals.i[:locals.num_blocks] >> [
 				IF (locals.i == locals.num_blocks - 1, [
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 		chat.gui_loop(),
 	])
 
-	if True:
+	if False:
 		cat.on_flag([
 			forever([
 				AskAndWait(),
@@ -164,6 +164,8 @@ if __name__ == "__main__":
 			chat.new_message(">", blake2s.hash.hex_out),
 			blake2s.hash((b"A"*32*3).hex()),
 			chat.new_message(">", blake2s.hash.hex_out),
+			blake2s.hash((b"").hex()),
+			chat.new_message(">", blake2s.hash.hex_out),
 		])
 		from cryptography.hazmat.primitives import hashes
 
@@ -176,6 +178,7 @@ if __name__ == "__main__":
 		print(blake2s(b"A"*64).hex())
 		print(blake2s(b"A"*128).hex())
 		print(blake2s(b"A"*32*3).hex())
+		print(blake2s(b"").hex())
 	
 
 	project.save("../test.sb3", execute=False)
