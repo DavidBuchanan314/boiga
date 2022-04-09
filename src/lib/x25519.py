@@ -68,6 +68,27 @@ class X25519():
 			]
 		]
 
+		def fjoin_hex_le(locals, out, inp): return [
+			out <= "",
+			locals.bytebuf <= 0,
+			locals.bitshift <= 1,
+			locals.i[1:12+1] >> [
+				locals.blah <= inp[locals.i-1] / RTOTALS[locals.i-1],
+				locals.shift <= 1,
+				locals.j[:RADICES[locals.i-1]] >> [
+					locals.bytebuf.changeby( ((locals.blah // locals.shift) & 1) * locals.bitshift ),
+					locals.bitshift.changeby(locals.bitshift),
+					IF (locals.bitshift == 1<<8) [
+						locals.bitshift <= 1,
+						out <= out.join(utils.HEX_LUT[locals.bytebuf]),
+						locals.bytebuf <= 0
+					],
+					locals.shift <= locals.shift * 2
+				]
+			],
+			out <= out.join(utils.HEX_LUT[locals.bytebuf]),
+		]
+
 		def bits2hex(locals, out, inp): return [
 			out <= "",
 			locals.i[:256:4] >> [
@@ -143,8 +164,8 @@ class X25519():
 			],
 
 			#carry_from(locals, C, 11),
-			tmp <= (C[11] - (C[11] % (2.0**math.ceil((11+1)*21.25)))),
-			C[11] <= C[11] - (C[11] - (C[11] % (2.0**math.ceil((11+1)*21.25)))),
+			tmp <= (C[11] - (C[11] % rtotals[11+1])),
+			C[11] <= C[11] - (C[11] - (C[11] % rtotals[11+1])),
 			C[0] <= C[0] + (tmp * (19.0*(2**-255))),
 		]
 
@@ -376,8 +397,9 @@ class X25519():
 			int255cpy(B, x_2),
 			modmul_body(),
 
-			fjoin(locals, locals.out_bits, C),
-			bits2hex_le(locals, locals.out_hex, locals.out_bits)
+			#fjoin(locals, locals.out_bits, C),
+			#bits2hex_le(locals, locals.out_hex, locals.out_bits)
+			fjoin_hex_le(locals, locals.out_hex, C)
 		]
 
 		# these are just exposed for testing

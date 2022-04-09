@@ -78,6 +78,7 @@ class ChaCha20():
 
 		self.encrypt = chacha20_encrypt
 		self.decrypt = chacha20_encrypt # it's the same thing!
+		self.tmp_buf = tmp_buf # poly1305 uses this to calculate r
 
 
 if __name__ == "__main__":
