@@ -415,7 +415,7 @@ class X25519():
 if __name__ == "__main__":
 	from .utils import Utils
 
-	project = Project(template="../test_files/Scratch Project.sb3")
+	project = Project()
 
 	cat = project.new_sprite("Sprite1")
 

@@ -9,7 +9,7 @@ from lib.utils import Utils
 from lib.chat import Chat
 from lib.blake2s import BLAKE2s
 
-project = Project(template="../test_files/Scratch Project.sb3")
+project = Project()
 
 cat = project.new_sprite("Sprite1")
 utils = Utils(cat)

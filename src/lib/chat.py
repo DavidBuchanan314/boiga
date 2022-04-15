@@ -7,7 +7,7 @@ from .utils import Utils
 class Chat():
 	def __init__(self, cat, utils):
 		overlay = cat.project.new_sprite("Overlay")
-		overlay.add_costume(f"overlay", open(f"../assets/overlay.svg", "rb").read(), "svg")
+		overlay.add_costume(f"overlay", open(f"../assets/overlay.svg", "rb").read(), "svg", (240+10, 180+4))
 
 		for codepoint in range(0x20, 0x7e):
 			costume_data = open(f"../assets/IBM_{codepoint}.png", "rb").read()
@@ -337,7 +337,7 @@ class Chat():
 			locals.hex_out <= "",
 			locals.i[:string.len()] >> [
 				SetCostume(Literal("IBM_").join(string[locals.i])),
-				locals.hex_out <= locals.hex_out.join(utils.HEX_LUT[CostumeNumber() + 0x1d])
+				locals.hex_out <= locals.hex_out.join(utils.HEX_LUT[CostumeNumber() + 0x1f])
 			]
 		]
 
@@ -349,7 +349,7 @@ class Chat():
 		self.string_to_hex = string_to_hex
 
 if __name__ == "__main__":
-	project = Project(template="../test_files/Scratch Project.sb3")
+	project = Project()
 
 	cat = project.new_sprite("Sprite1")
 	utils = Utils(cat)

@@ -1,5 +1,5 @@
 import hashlib
-from .utils import gen_uid
+from .utils import gen_uid, BLANK_SVG
 from zipfile import ZipFile
 import json
 import sys
@@ -9,27 +9,14 @@ from PIL import Image
 from . import ast
 
 class Project():
-	def __init__(self, template=None):
+	def __init__(self):
 		self.asset_data = {} # maps file name (md5.ext) to file contents
-		
-		if template:
-			with ZipFile(template) as zf:
-				self.template_json = json.load(zf.open("project.json"))
-				for asset_name in set(zf.namelist()) - {"project.json",}:
-					self.asset_data[asset_name] = zf.open(asset_name).read()
-		
 		self.sprites = []
 		self.monitors = []
-		self.stage = self.new_sprite("Stage")
+		self.stage = self.new_sprite("Stage", is_stage=True)
 	
-	def new_sprite(self, name):
-		template = None
-		if self.template_json:
-			for sprite_json in self.template_json["targets"]:
-				if sprite_json["name"] == name:
-					template = sprite_json
-					break
-		sprite = Sprite(self, name, template=template)
+	def new_sprite(self, name, is_stage=False):
+		sprite = Sprite(self, name, is_stage=is_stage)
 		self.sprites.append(sprite)
 		return sprite
 	
@@ -77,11 +64,10 @@ class Project():
 
 
 class Sprite():
-	def __init__(self, project, name, template=None):
+	def __init__(self, project, name, is_stage=False):
 		self.project = project
 		self.name = name
-		self.template_json = template
-		self.isStage = name == "Stage" # XXX: Technically, any sprite can be called Stage
+		self.isStage = is_stage
 		self.variable_uids = {} # name to uid
 		self.variable_values = {} # uid to value
 		self.list_uids = {} # name to uid
@@ -89,20 +75,8 @@ class Sprite():
 		self.scripts = []
 		self.costumes = {} # indexed by name
 		
-		if template:
-			for uid, (name, value) in template["variables"].items():
-				self.variable_uids[name] = uid
-				self.variable_values[uid] = value
-			
-			for uid, (name, value) in template["lists"].items():
-				self.list_uids[name] = uid
-				self.list_values[uid] = value
-			
-			self.current_costume = template["currentCostume"]
-			self.volume = template["volume"]
-		else:
-			self.current_costume = 1
-			self.volume = 100
+		self.current_costume = 1 # some way to adjust this?
+		self.volume = 100
 	
 	def new_var(self, name, value=""):
 		if not type(name) is str:
@@ -144,8 +118,16 @@ class Sprite():
 	def add_script(self, stack):
 		self.scripts.append(stack)
 	
-	def add_costume(self, name, data, extension):
-		self.costumes[name] = (data, extension)
+	def add_costume(self, name, data_or_path, extension=None, center=(0, 0)):
+		if type(data_or_path) is str:
+			path = data_or_path
+			data = open(path, "rb").read()
+			if extension is None:
+				extension = path.split(".")[-1]
+		else:
+			data = data_or_path
+
+		self.costumes[name] = (data, extension, center)
 
 	def on_flag(self, stack):
 		self.add_script(ast.on_flag(stack))
@@ -184,69 +166,60 @@ class Sprite():
 	
 	def serialise(self):
 		self.block_count = 0
-		if self.template_json:
-			sprite = self.template_json
+
+		if not self.costumes:
+			self.add_costume("costume", BLANK_SVG, "svg")
+
+		sprite = {}
+		sprite["isStage"] = self.isStage
+		sprite["name"] = self.name
+		sprite["variables"] = {}
+		sprite["lists"] = {}
+		sprite["broadcasts"] = {}
+		sprite["blocks"] = {}
+		sprite["comments"] = {}
+		sprite["currentCostume"] = self.current_costume
+		sprite["costumes"] = []
+		
+		sprite["sounds"] = []
+		sprite["volume"] = self.volume
+		
+		# fid the next unused layer
+		for i in range(99999999):
+			if i not in self.project.used_layers:
+				sprite["layerOrder"] = i
+				break
 		else:
-			sprite = {}
-			sprite["isStage"] = self.isStage
-			sprite["name"] = self.name
-			sprite["variables"] = {}
-			sprite["lists"] = {}
-			sprite["broadcasts"] = {}
-			sprite["blocks"] = {}
-			sprite["comments"] = {}
-			sprite["currentCostume"] = self.current_costume
-			sprite["costumes"] = []
-			
-			sprite["sounds"] = []
-			sprite["volume"] = self.volume
-			
-			# fid the next unused layer
-			for i in range(99999999):
-				if i not in self.project.used_layers:
-					sprite["layerOrder"] = i
-					break
-			else:
-				raise Exception("Too many layers?!??!")
-			
-			if self.isStage:
-				sprite["tempo"] = 60
-				sprite["videoTransparency"] = 50
-				sprite["videoState"] = "on"
-				sprite["textToSpeechLanguage"] = None
-			else:
-				sprite["visible"] = True
-				sprite["x"] = 0
-				sprite["y"] = 0
-				sprite["size"] = 100
-				sprite["direction"] = 90
-				sprite["draggable"] = False
-				sprite["rotationStyle"] = "all around"
+			raise Exception("Too many layers?!??!")
+		
+		if self.isStage:
+			sprite["tempo"] = 60
+			sprite["videoTransparency"] = 50
+			sprite["videoState"] = "on"
+			sprite["textToSpeechLanguage"] = None
+		else:
+			sprite["visible"] = True
+			sprite["x"] = 0
+			sprite["y"] = 0
+			sprite["size"] = 100
+			sprite["direction"] = 90
+			sprite["draggable"] = False
+			sprite["rotationStyle"] = "all around"
 		
 		# keep track of which lauers are occupied
 		self.project.used_layers.add(sprite["layerOrder"])
 		
-		for costume_name, (data, extension) in self.costumes.items():
+		for costume_name, (data, extension, center) in self.costumes.items():
 			md5 = hashlib.md5(data).hexdigest()
 			md5ext = f"{md5}.{extension}"
-			if extension == "png":
-				sprite["costumes"].append({
-					"assetId": md5,
-					"name": costume_name,
-					"md5ext": md5ext,
-					"dataFormat": extension,
-					"rotationCenterX": 0,
-					"rotationCenterY": 0
-				})
-			else: # TODO - do this properly???
-				sprite["costumes"].append({
-					"assetId": md5,
-					"name": costume_name,
-					"md5ext": md5ext,
-					"dataFormat": extension,
-					"rotationCenterX": 250,
-					"rotationCenterY": 185
-				})
+			sprite["costumes"].append({
+				"assetId": md5,
+				"name": costume_name,
+				"md5ext": md5ext,
+				"dataFormat": extension,
+				"rotationCenterX": center[0],
+				"rotationCenterY": center[1]
+			})
 			self.project.asset_data[md5ext] = data
 
 		# mark the asset to be added to the sb3

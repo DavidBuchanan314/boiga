@@ -232,7 +232,7 @@ if __name__ == "__main__":
 	from .utils import Utils
 	from .chacha20 import ChaCha20
 
-	project = Project(template="../test_files/Scratch Project.sb3")
+	project = Project()
 
 	cat = project.new_sprite("Sprite1")
 	utils = Utils(cat)

@@ -1,13 +1,16 @@
-from boiga.codegen import Project
-from boiga.ast import *
+from src.boiga.codegen import Project
+from src.boiga.ast import *
 
-project = Project(template="test_files/Scratch Project.sb3")
+#project = Project(template="test_files/Scratch Project.sb3")
+project = Project()
 
-cat = project.new_sprite("Sprite1")
+
+cat = project.new_sprite("Scratch Cat")
+cat.add_costume("scratchcat", "test_files/scratchcat.svg", center=(48, 50))
 
 my_variable = project.stage.new_var("my variable")
 var_foo = cat.new_var("foo", 123)
-stdout = project.stage.new_list("stdout", [])
+stdout = project.stage.new_list("stdout", [], monitor=[0, 0, 480-2, 130])
 
 """
 cat.on_flag([

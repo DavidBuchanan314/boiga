@@ -128,7 +128,7 @@ if __name__ == "__main__":
 	from .chat import Chat
 	from .utils import Utils
 
-	project = Project(template="../test_files/Scratch Project.sb3")
+	project = Project()
 
 	cat = project.new_sprite("Sprite1")
 	utils = Utils(cat)
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 		chat.gui_loop(),
 	])
 
-	if False:
+	if True:
 		cat.on_flag([
 			forever([
 				AskAndWait(),
