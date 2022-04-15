@@ -25,7 +25,6 @@ class Project():
 	
 	def save(self, filename, stealthy=False, execute=False):
 		self.used_layers = set() # used during serialisation
-		self.used_assets = set()
 		
 		with ZipFile(filename, "w") as zf:
 			project = {
@@ -58,9 +57,9 @@ class Project():
 				print(f"[*] project.json size: {len(json_blob)}")
 				projfile.write(json_blob)
 			
-			for asset_name in self.used_assets:
+			for asset_name, data in self.asset_data.items():
 				with zf.open(asset_name, "w") as f:
-					f.write(self.asset_data[asset_name])
+					f.write(data)
 		
 		if execute:
 			subprocess.call(["./tools/run_scratch.js", filename])
@@ -224,10 +223,6 @@ class Sprite():
 				"rotationCenterY": center[1]
 			})
 			self.project.asset_data[md5ext] = data
-
-		# mark the asset to be added to the sb3
-		for asset in sprite["costumes"] + sprite["sounds"]:
-			self.project.used_assets.add(asset["md5ext"])
 		
 		sprite["variables"] = {
 			uid: [name, self.variable_values[uid]]
