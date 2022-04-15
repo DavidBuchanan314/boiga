@@ -42,7 +42,7 @@ class ChaChaPoly1305():
 
 
 		# note: offset is nibble index, and must be a multiple of 2
-		@cat.proc_def("poly1305_split [block_hex] [offset]")
+		@cat.proc_def()
 		def poly1305_split(locals, block_hex, offset): return [
 			B.delete_all(),
 			B.append(extract_bits_from_hex(block_hex, offset, 0, 22)),
@@ -53,7 +53,7 @@ class ChaChaPoly1305():
 			B.append(extract_bits_from_hex(block_hex, offset, 22+22+21+22+22, 19) * rtotals[5]) # stop after 128 bits
 		]
 
-		@cat.proc_def("poly1305_join")
+		@cat.proc_def()
 		def poly1305_join(locals): return [
 			locals.hex_out <= "",
 			locals.bytebuf <= 0,
@@ -98,7 +98,7 @@ class ChaChaPoly1305():
 				arr[i] <= arr[i] - (arr[i] - (arr[i] % r)), # note, order of operations is very important here
 			]
 
-		@cat.proc_def("poly1305_mul")
+		@cat.proc_def()
 		def poly1305_mul(locals): return [
 			C.delete_all(),
 			textbook_mul(C, A, B),
@@ -126,7 +126,7 @@ class ChaChaPoly1305():
 			C[0] <= C[0] + (locals.tmp * (5.0*(2**-130))),
 		]
 
-		@cat.proc_def("chacha20_poly1305 [key_hex] [nonce_hex] [msg_hex]")
+		@cat.proc_def()
 		def chacha20_poly1305(locals, key_hex, nonce_hex, msg_hex): return [
 			chacha20.encrypt(key_hex, 0, nonce_hex, "00"*64),
 
@@ -193,7 +193,7 @@ class ChaChaPoly1305():
 			poly1305_join(),
 		]
 
-		@cat.proc_def("chacha20_poly1305_encrypt [key_hex] [nonce_hex] [msg_hex]")
+		@cat.proc_def()
 		def chacha20_poly1305_encrypt(locals, key_hex, nonce_hex, msg_hex): return [
 			chacha20.encrypt(key_hex, 1, nonce_hex, msg_hex),
 			locals.ct_out <= chacha20.encrypt.hex_out,
@@ -201,7 +201,7 @@ class ChaChaPoly1305():
 			locals.tag_out <= poly1305_join.hex_out,
 		]
 
-		@cat.proc_def("chacha20_poly1305_decrypt [key_hex] [nonce_hex] [msg_hex] [tag_hex]")
+		@cat.proc_def()
 		def chacha20_poly1305_decrypt(locals, key_hex, nonce_hex, msg_hex, tag_hex): return [
 			chacha20_poly1305(key_hex, nonce_hex, msg_hex),
 			IF (poly1305_join.hex_out == tag_hex, [ # TODO: constant time comparison?

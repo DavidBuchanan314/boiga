@@ -170,7 +170,7 @@ class X25519():
 		]
 
 		if testing:
-			@cat.proc_def("modmul_decode_output")
+			@cat.proc_def()
 			def modmul_decode_output(locals): return [
 				fjoin(locals, locals.out_bits, C),
 				bits2hex(locals, locals.out_hex, locals.out_bits)
@@ -227,7 +227,7 @@ class X25519():
 
 		inv_tmp = cat.new_list("INV_TMP", [0]*12)
 		# input: A, output C
-		@cat.proc_def("x25519_invert", turbo=True)
+		@cat.proc_def(turbo=True)
 		def x25519_invert(locals): return [
 			int255cpy(inv_tmp, A), # copy of input
 			int255cpy(C, A), # c = accumulator

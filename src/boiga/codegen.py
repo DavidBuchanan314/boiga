@@ -153,10 +153,19 @@ class Sprite():
 	def on_press(self, key, stack):
 		self.add_script(ast.on_press(key, stack))
 
-	def proc_def(self, fmt, generator=None, turbo=True):
+	def proc_def(self, fmt=None, generator=None, turbo=True):
 		if generator is None: # function decorator hackery
 			return lambda generator: self.proc_def(fmt, generator, turbo)
 		
+		if fmt is None:
+			arg_names = generator.__code__.co_varnames[:generator.__code__.co_argcount]
+			fmt = generator.__name__
+			for arg in arg_names[1:]: # skip locals
+				if generator.__annotations__.get(arg) is bool:
+					fmt += f" <{arg}>"
+				else:
+					fmt += f" [{arg}]"
+
 		uid = gen_uid()
 		proc_proto = ast.ProcProto(self, fmt, uid, turbo)
 
