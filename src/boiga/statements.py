@@ -9,7 +9,7 @@ def serialise_statement(sprite, statement):
 
 	blocks_json = sprite.blocks_json
 
-	uid = gen_uid()
+	uid = sprite.gen_uid()
 	blocks_json[uid] = {
 		"inputs": {},
 		"fields": {},
@@ -238,10 +238,7 @@ def serialise_statement(sprite, statement):
 	# ======= looks =======
 
 	elif statement.op in ["looks_show", "looks_hide"]:
-		out = {
-			"opcode": statement.op,
-			"inputs": {}
-		}
+		out = {"opcode": statement.op}
 	
 	elif statement.op == "looks_switchcostumeto":
 		out = {

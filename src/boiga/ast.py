@@ -295,7 +295,9 @@ class IfStatement(Statement):
 	def __init__(self, condition, then):
 		super().__init__("control_if", CONDITION=ensure_expression(condition), SUBSTACK=then)
 	
-	def ELSE(self, do):
+	def ELSE(self, do=None):
+		if do is None:
+			return getitem_hack(self.ELSE)
 		return IfElseStatement(self.args["CONDITION"], self.args["SUBSTACK"], do)
 
 class IfElseStatement(Statement):

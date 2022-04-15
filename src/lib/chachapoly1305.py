@@ -204,14 +204,14 @@ class ChaChaPoly1305():
 		@cat.proc_def()
 		def chacha20_poly1305_decrypt(locals, key_hex, nonce_hex, msg_hex, tag_hex): return [
 			chacha20_poly1305(key_hex, nonce_hex, msg_hex),
-			IF (poly1305_join.hex_out == tag_hex, [ # TODO: constant time comparison?
+			IF (poly1305_join.hex_out == tag_hex) [ # TODO: constant time comparison?
 				chacha20.decrypt(key_hex, 1, nonce_hex, msg_hex),
 				locals.hex_out <= chacha20.decrypt.hex_out,
 				locals.msg_valid <= "true",
-			]).ELSE([
+			].ELSE()[
 				locals.hex_out <= "",
 				locals.msg_valid <= "false",
-			]),
+			],
 			
 		]
 

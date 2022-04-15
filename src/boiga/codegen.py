@@ -5,7 +5,6 @@ from zipfile import ZipFile
 import json
 import sys
 import subprocess
-from PIL import Image
 
 from . import ast
 from .expressions import serialise_expression
@@ -69,7 +68,7 @@ class Sprite():
 	def __init__(self, project, name, is_stage=False):
 		self.project = project
 		self.name = name
-		self.isStage = is_stage
+		self.is_stage = is_stage
 		self.variable_uids = {} # name to uid
 		self.variable_values = {} # uid to value
 		self.list_uids = {} # name to uid
@@ -84,10 +83,11 @@ class Sprite():
 		if not type(name) is str:
 			raise Exception("Variable name must be a string")
 		
-		#if name in self.variable_uids:
-		#	raise Exception(f"Variable {name!r} already exists!")
+		if name in self.variable_uids:
+			uid = self.variable_uids[name]
+		else:
+			uid = self.gen_uid(["var", name])
 		
-		uid = self.variable_uids.get(name, gen_uid())
 		self.variable_uids[name] = uid
 		self.variable_values[uid] = value
 		return ast.Var(self, name, uid)
@@ -96,9 +96,10 @@ class Sprite():
 		if not type(name) is str:
 			raise Exception("List name must be a string")
 		
-		uid = self.list_uids.get(name, gen_uid())
+		uid = self.list_uids.get(name, self.gen_uid(["list", name]))
 		self.list_uids[name] = uid
 		self.list_values[uid] = value
+
 		if monitor:
 			self.project.monitors.append({
 				"id": uid,
@@ -115,6 +116,7 @@ class Sprite():
 				"y": monitor[1],
 				"visible": True
 			})
+		
 		return ast.List(self, name, uid)
 	
 	def add_script(self, stack):
@@ -150,12 +152,18 @@ class Sprite():
 				else:
 					fmt += f" [{arg}]"
 
-		uid = gen_uid()
+		uid = gen_uid(["procproto", fmt])
 		proc_proto = ast.ProcProto(self, fmt, uid, turbo)
 
 		for varname, vartype in zip(proc_proto.argnames, proc_proto.argtypes):
 			varinit = ast.ProcVarBool if vartype == "bool" else ast.ProcVar
-			proc_proto.vars.append(varinit(self, proc_proto, varname, gen_uid(), gen_uid()))
+			proc_proto.vars.append(
+				varinit(
+					self, proc_proto, varname,
+					gen_uid(["procvar1", fmt, varname]),
+					gen_uid(["procvar2", fmt, varname])
+				)
+			)
 		
 		procdef = ast.ProcDef(proc_proto)
 
@@ -170,12 +178,13 @@ class Sprite():
 		self.block_count = 0
 		self.blocks_json = {}
 		self.hat_count = 0
+		self.uid_ctr = 0
 
 		if not self.costumes:
 			self.add_costume("costume", BLANK_SVG, "svg")
 
 		sprite = {}
-		sprite["isStage"] = self.isStage
+		sprite["isStage"] = self.is_stage
 		sprite["name"] = self.name
 		sprite["variables"] = {}
 		sprite["lists"] = {}
@@ -196,7 +205,7 @@ class Sprite():
 		else:
 			raise Exception("Too many layers?!??!")
 		
-		if self.isStage:
+		if self.is_stage:
 			sprite["tempo"] = 60
 			sprite["videoTransparency"] = 50
 			sprite["videoState"] = "on"
@@ -317,3 +326,10 @@ class Sprite():
 	
 	def serialise_statement(self, statement):
 		return serialise_statement(self, statement)
+	
+	def gen_uid(self, seed=None):
+		if seed is None:
+			seed = [self.uid_ctr]
+			self.uid_ctr += 1
+		seed = [self.name] + seed
+		return gen_uid(seed)

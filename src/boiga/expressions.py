@@ -1,5 +1,4 @@
 from . import ast
-from .utils import gen_uid
 
 def serialise_expression(sprite, expression, parent, shadow=False):
 	if not issubclass(type(expression), ast.Expression):
@@ -7,7 +6,7 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 	
 	blocks_json = sprite.blocks_json
 
-	uid = gen_uid()
+	uid = sprite.gen_uid()
 	blocks_json[uid] = {
 		"next": None,
 		"parent": parent,
@@ -17,7 +16,9 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 		"topLevel": False,
 	}
 
-	UNARYMATHOPS = ["floor", "ceiling", "abs", "round"]
+	# XXX: should round be in here? does it work?
+	UNARYMATHOPS = ["abs", "floor", "ceiling", "sqrt", "sin", "cos", "tan",
+		"asin", "acos", "atan", "ln", "log", "e ^", "10 ^", "round"]
 
 	if type(expression) is ast.BinaryOp:
 		opmap = {
