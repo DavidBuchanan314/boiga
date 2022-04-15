@@ -12,7 +12,9 @@ def serialise_statement(sprite, statement):
 	uid = gen_uid()
 	blocks_json[uid] = {
 		"inputs": {},
-		"fields": {}
+		"fields": {},
+		"shadow": False,
+		"topLevel": False,
 	}
 	
 	# ===== EVENTS =======
@@ -254,10 +256,7 @@ def serialise_statement(sprite, statement):
 	# ======= pen =======
 
 	elif statement.op in ["pen_clear", "pen_stamp", "pen_penDown", "pen_penUp"]:
-		out = {
-			"opcode": statement.op,
-			"inputs": {}
-		}
+		out = {"opcode": statement.op}
 
 	elif statement.op == "pen_setPenColorToColor":
 		out = {
@@ -277,10 +276,6 @@ def serialise_statement(sprite, statement):
 
 	else:
 		raise Exception(f"I don't know how to serialise this op: {statement.op!r}")
-	
-	out["shadow"] = False
-	out["topLevel"] = False
-	
+
 	blocks_json[uid].update(out)
-	
 	return uid

@@ -168,6 +168,8 @@ class Sprite():
 	
 	def serialise(self):
 		self.block_count = 0
+		self.blocks_json = {}
+		self.hat_count = 0
 
 		if not self.costumes:
 			self.add_costume("costume", BLANK_SVG, "svg")
@@ -178,7 +180,7 @@ class Sprite():
 		sprite["variables"] = {}
 		sprite["lists"] = {}
 		sprite["broadcasts"] = {}
-		sprite["blocks"] = {}
+		sprite["blocks"] = self.blocks_json
 		sprite["comments"] = {}
 		sprite["currentCostume"] = self.current_costume
 		sprite["costumes"] = []
@@ -236,7 +238,6 @@ class Sprite():
 			in self.list_uids.items()
 		}
 		
-		self.blocks_json = sprite["blocks"]
 		for script in self.scripts:
 			self.serialise_script(script)
 		
@@ -255,8 +256,9 @@ class Sprite():
 			else:
 				self.blocks_json[uid]["parent"] = None
 				self.blocks_json[uid]["topLevel"] = True
-				self.blocks_json[uid]["x"] = 0
+				self.blocks_json[uid]["x"] = self.hat_count * 500 # naively arrange in columns
 				self.blocks_json[uid]["y"] = 0
+				self.hat_count += 1
 			parent = uid
 		
 		return [2, top_uid]

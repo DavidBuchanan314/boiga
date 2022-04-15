@@ -8,6 +8,15 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 	blocks_json = sprite.blocks_json
 
 	uid = gen_uid()
+	blocks_json[uid] = {
+		"next": None,
+		"parent": parent,
+		"inputs": {},
+		"fields": {},
+		"shadow": shadow,
+		"topLevel": False,
+	}
+
 	if type(expression) is ast.BinaryOp:
 		opmap = {
 			"+": ("operator_add", "NUM"),
@@ -39,24 +48,19 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 				an1 = "FROM"
 				an2 = "TO"
 
-			blocks_json[uid] = {
+			out = {
 				"opcode": opcode,
-				"next": None,
-				"parent": parent,
 				"inputs": {
 					an1: serialiser(expression.lval, uid),
 					an2: serialiser(expression.rval, uid),
 				},
-				"fields": {},
-				"shadow": False,
-				"topLevel": False,
 			}
-			return uid
+		else:
+			raise Exception(f"Unable to serialise expression {expression!r}")
+
 	elif type(expression) is ast.ListIndex:
-		blocks_json[uid] = {
+		out = {
 			"opcode": "data_itemoflist",
-			"next": None,
-			"parent": parent,
 			"inputs": {
 				"INDEX": sprite.serialise_arg(expression.index, uid)
 			},
@@ -66,15 +70,11 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 					expression.list.uid
 				]
 			},
-			"shadow": False,
-			"topLevel": False,
 		}
-		return uid
+
 	elif type(expression) is ast.ListItemNum:
-		blocks_json[uid] = {
+		out = {
 			"opcode": "data_itemnumoflist",
-			"next": None,
-			"parent": parent,
 			"inputs": {
 				"ITEM": sprite.sprite.serialise_arg(expression.item, uid)
 			},
@@ -84,211 +84,121 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 					expression.list.uid
 				]
 			},
-			"shadow": False,
-			"topLevel": False,
 		}
-		return uid
+
 	elif type(expression) is ast.UnaryOp:
 		if expression.op == "!":
-			blocks_json[uid] = {
+			out = {
 				"opcode": "operator_not",
-				"next": None,
-				"parent": parent,
 				"inputs": {
 					"OPERAND": sprite.serialise_bool(expression.value, uid),
 				},
-				"fields": {},
-				"shadow": False,
-				"topLevel": False,
 			}
-			return uid
+
 		elif expression.op == "len":
-			blocks_json[uid] = {
+			out = {
 				"opcode": "operator_length",
-				"next": None,
-				"parent": parent,
 				"inputs": {
 					"STRING": sprite.serialise_arg(expression.value, uid),
 				},
-				"fields": {},
-				"shadow": False,
-				"topLevel": False,
 			}
-			return uid
+
 		elif expression.op == "floor":
-			blocks_json[uid] = {
+			out = {
 				"opcode": "operator_mathop",
-				"next": None,
-				"parent": parent,
 				"inputs": {
 					"NUM": sprite.serialise_arg(expression.value, uid),
 				},
 				"fields": {
 					"OPERATOR": ["floor", None]
 				},
-				"shadow": False,
-				"topLevel": False,
 			}
-			return uid
+
 		elif expression.op == "ceil":
-			blocks_json[uid] = {
+			out = {
 				"opcode": "operator_mathop",
-				"next": None,
-				"parent": parent,
 				"inputs": {
 					"NUM": sprite.serialise_arg(expression.value, uid),
 				},
 				"fields": {
 					"OPERATOR": ["ceiling", None]
 				},
-				"shadow": False,
-				"topLevel": False,
 			}
-			return uid
+
 		elif expression.op == "abs":
-			blocks_json[uid] = {
+			out = {
 				"opcode": "operator_mathop",
-				"next": None,
-				"parent": parent,
 				"inputs": {
 					"NUM": sprite.serialise_arg(expression.value, uid),
 				},
 				"fields": {
 					"OPERATOR": ["abs", None]
 				},
-				"shadow": False,
-				"topLevel": False,
 			}
-			return uid
+
 		elif expression.op == "round":
-			blocks_json[uid] = {
+			out = {
 				"opcode": "operator_mathop",
-				"next": None,
-				"parent": parent,
 				"inputs": {
 					"NUM": sprite.serialise_arg(expression.value, uid),
 				},
 				"fields": {
 					"OPERATOR": ["round", None]
 				},
-				"shadow": False,
-				"topLevel": False,
 			}
-			return uid
+
 		elif expression.op == "listlen":
-			blocks_json[uid] = {
+			out = {
 				"opcode": "data_lengthoflist",
-				"next": None,
-				"parent": parent,
-				"inputs": {},
 				"fields": {
 					"LIST": [expression.value.name, expression.value.uid],
 				},
-				"shadow": False,
-				"topLevel": False,
 			}
-			return uid
+
+		else:
+			raise Exception(f"Unable to serialise expression {expression!r}")
 	
 	elif type(expression) is ast.ProcVar:
-		blocks_json[uid] = {
+		out = {
 			"opcode": "argument_reporter_string_number",
-			"next": None,
-			"parent": parent,
-			"inputs": {},
 			"fields": {
 				"VALUE": [expression.name, None]
 			},
-			"shadow": shadow,
-			"topLevel": False
 		}
-		return uid
 	
 	elif type(expression) is ast.ProcVarBool:
-		blocks_json[uid] = {
+		out = {
 			"opcode": "argument_reporter_boolean",
-			"next": None,
-			"parent": parent,
-			"inputs": {},
 			"fields": {
 				"VALUE": [expression.name, None]
 			},
-			"shadow": shadow,
-			"topLevel": False
 		}
-		return uid
 	
 	elif type(expression) is ast.DaysSince2k:
-		blocks_json[uid] = {
-			"opcode": "sensing_dayssince2000",
-			"next": None,
-			"parent": parent,
-			"inputs": {},
-			"fields": {},
-			"shadow": shadow,
-			"topLevel": False
-		}
-		return uid
+		out = {"opcode": "sensing_dayssince2000"}
 	
 	elif type(expression) is ast.Answer:
-		blocks_json[uid] = {
-			"opcode": "sensing_answer",
-			"next": None,
-			"parent": parent,
-			"inputs": {},
-			"fields": {},
-			"shadow": shadow,
-			"topLevel": False
-		}
-		return uid
+		out = {"opcode": "sensing_answer"}
 	
 	elif type(expression) is ast.MouseDown:
-		blocks_json[uid] = {
-			"opcode": "sensing_mousedown",
-			"next": None,
-			"parent": parent,
-			"inputs": {},
-			"fields": {},
-			"shadow": shadow,
-			"topLevel": False
-		}
-		return uid
+		out = {"opcode": "sensing_mousedown"}
 	
 	elif type(expression) is ast.MouseX:
-		blocks_json[uid] = {
-			"opcode": "sensing_mousex",
-			"next": None,
-			"parent": parent,
-			"inputs": {},
-			"fields": {},
-			"shadow": shadow,
-			"topLevel": False
-		}
-		return uid
+		out = {"opcode": "sensing_mousex"}
 	
 	elif type(expression) is ast.MouseY:
-		blocks_json[uid] = {
-			"opcode": "sensing_mousey",
-			"next": None,
-			"parent": parent,
-			"inputs": {},
-			"fields": {},
-			"shadow": shadow,
-			"topLevel": False
-		}
-		return uid
+		out = {"opcode": "sensing_mousey"}
 	
 	elif type(expression) is ast.CostumeNumber:
-		blocks_json[uid] = {
+		out = {
 			"opcode": "looks_costumenumbername",
-			"next": None,
-			"parent": parent,
-			"inputs": {},
 			"fields": {
 				"NUMBER_NAME": ["number", None]
 			},
-			"shadow": shadow,
-			"topLevel": False
 		}
-		return uid
 
-	raise Exception(f"Unable to serialise expression {expression!r}")
+	else:
+		raise Exception(f"Unable to serialise expression {expression!r}")
+	
+	blocks_json[uid].update(out)
+	return uid

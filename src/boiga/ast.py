@@ -1,8 +1,12 @@
 import math
 
 
+def is_expression(value):
+	return issubclass(type(value), Expression)
+
+
 def ensure_expression(value):
-	if issubclass(type(value), Expression):
+	if is_expression(value):
 		return value
 	if type(value) in [str, int, float]:
 		return Literal(value)
@@ -432,6 +436,7 @@ class ProcProto(Statement):
 
 		# quick and dirty parser state machine
 		# [square] brackets denote numeric/string args, <triangle> brackets denote bool args
+		# (does anyone ever actually use bool args?)
 		self.argtypes = []
 		self.proccode = ""
 		self.argnames = []
@@ -552,7 +557,11 @@ def IF(condition, then=None):
 		return getitem_hack(IF, condition)
 	return IfStatement(condition, then)
 
-# sugar
+
+def pickrandom(a, b):
+	return BinaryOp("random", a, b)
+
+# sugar (turns out it's not so easy to seperate sugar from core AST...)
 
 def varloop(var, _range, body): return [
 	var <= _range.start,
@@ -579,9 +588,6 @@ def sumchain(arr):
 
 millis_now = DaysSince2k() * 86400000
 
-
-def pickrandom(a, b):
-	return BinaryOp("random", a, b)
 
 
 if __name__ == "__main__":
