@@ -17,6 +17,8 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 		"topLevel": False,
 	}
 
+	UNARYMATHOPS = ["floor", "ceiling", "abs", "round"]
+
 	if type(expression) is ast.BinaryOp:
 		opmap = {
 			"+": ("operator_add", "NUM"),
@@ -103,47 +105,14 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 				},
 			}
 
-		elif expression.op == "floor":
+		elif expression.op in UNARYMATHOPS:
 			out = {
 				"opcode": "operator_mathop",
 				"inputs": {
 					"NUM": sprite.serialise_arg(expression.value, uid),
 				},
 				"fields": {
-					"OPERATOR": ["floor", None]
-				},
-			}
-
-		elif expression.op == "ceil":
-			out = {
-				"opcode": "operator_mathop",
-				"inputs": {
-					"NUM": sprite.serialise_arg(expression.value, uid),
-				},
-				"fields": {
-					"OPERATOR": ["ceiling", None]
-				},
-			}
-
-		elif expression.op == "abs":
-			out = {
-				"opcode": "operator_mathop",
-				"inputs": {
-					"NUM": sprite.serialise_arg(expression.value, uid),
-				},
-				"fields": {
-					"OPERATOR": ["abs", None]
-				},
-			}
-
-		elif expression.op == "round":
-			out = {
-				"opcode": "operator_mathop",
-				"inputs": {
-					"NUM": sprite.serialise_arg(expression.value, uid),
-				},
-				"fields": {
-					"OPERATOR": ["round", None]
+					"OPERATOR": [expression.op, None]
 				},
 			}
 

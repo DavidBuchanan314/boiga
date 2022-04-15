@@ -55,7 +55,7 @@ class Expression():
 		return UnaryOp("floor", self)
 	
 	def __ceil__(self):
-		return UnaryOp("ceil", self)
+		return UnaryOp("ceiling", self)
 
 	def __round__(self):
 		return UnaryOp("round", self)
