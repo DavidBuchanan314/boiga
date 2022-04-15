@@ -77,7 +77,7 @@ class BLAKE3():
 			locals.padded <= message_hex.join("0"*128),
 			[state[i] <= self.IV[i] for i in range(8)],
 
-			locals.num_blocks <= math.ceil(message_hex.len()/(64*2)) + (locals.message_hex.len() == 0),
+			locals.num_blocks <= math.ceil(message_hex.len()/(64*2)) + (message_hex.len() == 0),
 			locals.i[:locals.num_blocks] >> [
 				locals.d <= 0,
 				IF (locals.i == 0) [

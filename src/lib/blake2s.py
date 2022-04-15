@@ -86,13 +86,13 @@ class BLAKE2s():
 			]
 
 
-		@cat.proc_def("blake2s_hash [message_hex]")
+		@cat.proc_def()
 		def blake2s_hash(locals, message_hex): return [
 			locals.padded <= message_hex.join("0"*128),
 			state_h[0] <= self.IV[0] ^ 0x01010020, # static parameter block (rest is zeroes)
 			[state_h[i] <= self.IV[i] for i in range(1,8)],
 
-			locals.num_blocks <= math.ceil(message_hex.len()/(64*2)) + (locals.message_hex.len() == 0),
+			locals.num_blocks <= math.ceil(message_hex.len()/(64*2)) + (message_hex.len() == 0),
 			locals.t <= 0,
 			locals.i[:locals.num_blocks] >> [
 				IF (locals.i == locals.num_blocks - 1, [
