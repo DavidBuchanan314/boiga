@@ -143,14 +143,14 @@ if __name__ == "__main__":
 
 	if True:
 		cat.on_flag([
-			Forever([
+			Forever [
 				AskAndWait(),
 				chat.new_message("<", Answer()),
 				chat.wait_for_animation(),
 				chat.string_to_hex(Answer()),
 				blake2s.hash(chat.string_to_hex.hex_out),
 				chat.new_message(">", Literal("BLAKE2s(").join(Answer()).join(") = ").join(blake2s.hash.hex_out)),
-			])
+			]
 		])
 	else:
 

@@ -191,7 +191,7 @@ class Chat():
 
 		@cat.proc_def("gui_loop", turbo=False)
 		def gui_loop(locals): return [
-			Forever ([
+			Forever [
 
 				# mouse drag scrolling
 				If (MouseDown()) [
@@ -237,7 +237,7 @@ class Chat():
 
 				# actually render
 				render(Literal(0)-math.floor(scrollpos)),
-			])
+			]
 		]
 
 		@cat.proc_def("wait_for_animation", turbo=False)
@@ -370,13 +370,13 @@ if __name__ == "__main__":
 
 		chat.new_message("<", "barfoo"),
 
-		Forever ([
+		Forever [
 			AskAndWait(),
 			chat.new_message("<", Answer()),
 			Wait(1),
 			chat.string_to_hex(Answer()),
 			chat.new_message(">", Literal("You said: ").join(chat.string_to_hex.hex_out)),
-		])
+		]
 	])
 
 	project.save("../test.sb3", execute=False)

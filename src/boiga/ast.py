@@ -79,11 +79,12 @@ class Wait(core.Statement):
 
 Repeat = core.repeatn
 
-# TODO: convert to class
-def Forever(do=None):
-	if do is None:
-		return core.getitem_hack(forever)
-	return core.Statement("control_forever", SUBSTACK=do)
+class ForeverHack():
+	def __getitem__(self, do):
+		if type(do) != tuple:
+			do = [do]
+		return core.Statement("control_forever", SUBSTACK=list(do))
+Forever = ForeverHack()
 
 def If(condition, then=None):
 	if then is None:

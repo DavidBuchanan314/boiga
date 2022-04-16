@@ -129,14 +129,14 @@ if __name__ == "__main__":
 	])
 
 	cat.on_flag([
-		forever([
+		Forever [
 			AskAndWait(),
 			chat.new_message("<", Answer()),
 			chat.wait_for_animation(),
 			chat.string_to_hex(Answer()),
 			blake3.hash(chat.string_to_hex.hex_out),
 			chat.new_message(">", Literal("BLAKE3(").join(Answer()).join(") = ").join(blake3.hash.hex_out)),
-		])
+		]
 	])
 
 	"""
