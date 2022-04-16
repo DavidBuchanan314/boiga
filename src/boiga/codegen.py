@@ -61,7 +61,7 @@ class Project():
 					f.write(data)
 		
 		if execute:
-			subprocess.call(["./tools/run_scratch.js", filename])
+			subprocess.call(["../tools/run_scratch.js", filename])
 
 
 class Sprite():
@@ -169,10 +169,7 @@ class Sprite():
 
 		self.add_script([procdef] + generator(procdef, *proc_proto.vars))
 
-		# TODO: generate proc definition code, add to scripts
-		# we're gonna need some kinda per-sprite proc registry,
-		# to support overwriting existing procs
-		return procdef#lambda *args: ast.Statement("procedures_call", PROC=uid, ARGS=args)
+		return procdef
 	
 	def serialise(self):
 		self.block_count = 0
@@ -183,21 +180,29 @@ class Sprite():
 		if not self.costumes:
 			self.add_costume("costume", BLANK_SVG, "svg")
 
-		sprite = {}
-		sprite["isStage"] = self.is_stage
-		sprite["name"] = self.name
-		sprite["variables"] = {}
-		sprite["lists"] = {}
-		sprite["broadcasts"] = {}
-		sprite["blocks"] = self.blocks_json
-		sprite["comments"] = {}
-		sprite["currentCostume"] = self.current_costume
-		sprite["costumes"] = []
+		sprite = {
+			"isStage": self.is_stage,
+			"name": self.name,
+			"variables": {
+				uid: [name, self.variable_values[uid]]
+				for name, uid
+				in self.variable_uids.items()
+			},
+			"lists": {
+				uid: [name, self.list_values[uid]]
+				for name, uid
+				in self.list_uids.items()
+			},
+			"broadcasts": {},
+			"blocks": self.blocks_json,
+			"comments": {},
+			"currentCostume": self.current_costume,
+			"costumes": [],
+			"sounds": [],
+			"volume": self.volume
+		}
 		
-		sprite["sounds"] = []
-		sprite["volume"] = self.volume
-		
-		# fid the next unused layer
+		# find the next unused layer
 		for i in range(99999999):
 			if i not in self.project.used_layers:
 				sprite["layerOrder"] = i
@@ -206,20 +211,24 @@ class Sprite():
 			raise Exception("Too many layers?!??!")
 		
 		if self.is_stage:
-			sprite["tempo"] = 60
-			sprite["videoTransparency"] = 50
-			sprite["videoState"] = "on"
-			sprite["textToSpeechLanguage"] = None
+			sprite.update({
+				"tempo": 60,
+				"videoTransparency": 50,
+				"videoState": "on",
+				"textToSpeechLanguage": None,
+			})
 		else:
-			sprite["visible"] = True
-			sprite["x"] = 0
-			sprite["y"] = 0
-			sprite["size"] = 100
-			sprite["direction"] = 90
-			sprite["draggable"] = False
-			sprite["rotationStyle"] = "all around"
+			sprite.update({
+				"visible": True,
+				"x": 0,
+				"y": 0,
+				"size": 100,
+				"direction": 90,
+				"draggable": False,
+				"rotationStyle": "all around"
+			})
 		
-		# keep track of which lauers are occupied
+		# keep track of which layers are occupied
 		self.project.used_layers.add(sprite["layerOrder"])
 		
 		for costume_name, (data, extension, center) in self.costumes.items():
@@ -234,18 +243,6 @@ class Sprite():
 				"rotationCenterY": center[1]
 			})
 			self.project.asset_data[md5ext] = data
-		
-		sprite["variables"] = {
-			uid: [name, self.variable_values[uid]]
-			for name, uid
-			in self.variable_uids.items()
-		}
-		
-		sprite["lists"] = {
-			uid: [name, self.list_values[uid]]
-			for name, uid
-			in self.list_uids.items()
-		}
 		
 		for script in self.scripts:
 			self.serialise_script(script)
@@ -263,10 +260,12 @@ class Sprite():
 				self.blocks_json[uid]["parent"] = parent
 				self.blocks_json[parent]["next"] = uid
 			else:
-				self.blocks_json[uid]["parent"] = None
-				self.blocks_json[uid]["topLevel"] = True
-				self.blocks_json[uid]["x"] = self.hat_count * 500 # naively arrange in columns
-				self.blocks_json[uid]["y"] = 0
+				self.blocks_json[uid].update({
+					"parent": None,
+					"topLevel": True,
+					"x": self.hat_count * 500, # naively arrange in columns
+					"y": 0
+				})
 				self.hat_count += 1
 			parent = uid
 		
