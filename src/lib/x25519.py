@@ -1,5 +1,4 @@
-from boiga.codegen import Project
-from boiga.ast import *
+from boiga import *
 
 import math
 

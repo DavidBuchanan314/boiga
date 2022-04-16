@@ -1,5 +1,4 @@
-from boiga.codegen import Project
-from boiga.ast import *
+from boiga import *
 
 from lib.chacha20_csprng import CSPRNG
 from lib.x25519 import X25519

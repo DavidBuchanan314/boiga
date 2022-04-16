@@ -10,7 +10,7 @@ cat.add_costume("scratchcat", "test_files/scratchcat.svg", center=(48, 50))
 
 my_variable = project.stage.new_var("my variable")
 var_foo = cat.new_var("foo", 123)
-stdout = project.stage.new_list("stdout", [], monitor=[0, 0, 480-2, 130])
+stdout = project.stage.new_list("stdout", [], monitor=[0, 0, 480-2, 140])
 
 """
 cat.on_flag([
@@ -73,11 +73,12 @@ cat.on_flag([
 	tmp <= "",
 	i[:hex_out.len()] >> [
 		tmp <= tmp.join(hex_out[i]),
-		IF (i != hex_out.len() - 1) [
+		If (i != hex_out.len() - 1) [
 			tmp <= tmp.join(", ")
 		]
 	],
-	stdout.append(tmp)
+	stdout.append(tmp),
+	stdout.append(hex_out)
 ])
 
 

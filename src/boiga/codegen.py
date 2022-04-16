@@ -30,7 +30,7 @@ class Project():
 			project = {
 				"targets": [s.serialise() for s in self.sprites],
 				"monitors": self.monitors,
-				"extensions": [],
+				"extensions": ["pen"],
 				"meta": {
 					"semver": "3.0.0",
 					"vm": "0.2.0-prerelease.20210706190652",
@@ -286,6 +286,9 @@ class Sprite():
 		if type(expression) is ast_core.Var:
 			self.block_count += 1
 			return [3, [12, expression.name, expression.uid], alternative]
+		if type(expression) is ast_core.List:
+			self.block_count += 1
+			return [3, [13, expression.name, expression.uid], alternative]
 		
 		# compound expressions
 		return [3, self.serialise_expression(expression, parent), alternative]
