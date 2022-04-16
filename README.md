@@ -13,3 +13,9 @@ Boiga (ab)uses Python's operator overloading, to write Scratch expressions with 
 - Static allocation of "sub-lists" within lists
 - Dynamic allocation of space within lists (i.e. malloc)?
 - For both of the above, we can pass indices around like pointers
+
+## Building Examples:
+
+```sh
+python3 -m examples
+```
