@@ -128,9 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-test.sb3
+*.sb3
 DEBUG.json
-test_files
 
 # npm noise
 node_modules
