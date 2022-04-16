@@ -242,7 +242,7 @@ def serialise_statement(sprite, statement):
 	elif statement.op == "looks_switchcostumeto":
 		out = {
 			"opcode": statement.op,
-			"inputs": {
+			"inputs": { # TODO: insert correct sub-block
 				"COSTUME": sprite.serialise_arg(statement.args["COSTUME"], uid)
 			}
 		}
