@@ -1,7 +1,7 @@
 from . import ast
 
 def serialise_expression(sprite, expression, parent, shadow=False):
-	if not issubclass(type(expression), ast.Expression):
+	if not issubclass(type(expression), ast.core.Expression):
 		raise Exception(f"Cannot serialise {expression!r} as a expression")
 	
 	blocks_json = sprite.blocks_json
@@ -20,7 +20,7 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 	UNARYMATHOPS = ["abs", "floor", "ceiling", "sqrt", "sin", "cos", "tan",
 		"asin", "acos", "atan", "ln", "log", "e ^", "10 ^", "round"]
 
-	if type(expression) is ast.BinaryOp:
+	if type(expression) is ast.core.BinaryOp:
 		opmap = {
 			"+": ("operator_add", "NUM"),
 			"-": ("operator_subtract", "NUM"),
@@ -61,7 +61,7 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 		else:
 			raise Exception(f"Unable to serialise expression {expression!r}")
 
-	elif type(expression) is ast.ListIndex:
+	elif type(expression) is ast.core.ListIndex:
 		out = {
 			"opcode": "data_itemoflist",
 			"inputs": {
@@ -75,7 +75,7 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 			},
 		}
 
-	elif type(expression) is ast.ListItemNum:
+	elif type(expression) is ast.core.ListItemNum:
 		out = {
 			"opcode": "data_itemnumoflist",
 			"inputs": {
@@ -89,7 +89,7 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 			},
 		}
 
-	elif type(expression) is ast.UnaryOp:
+	elif type(expression) is ast.core.UnaryOp:
 		if expression.op == "!":
 			out = {
 				"opcode": "operator_not",
@@ -128,7 +128,7 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 		else:
 			raise Exception(f"Unable to serialise expression {expression!r}")
 	
-	elif type(expression) is ast.ProcVar:
+	elif type(expression) is ast.core.ProcVar:
 		out = {
 			"opcode": "argument_reporter_string_number",
 			"fields": {
@@ -136,7 +136,7 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 			},
 		}
 	
-	elif type(expression) is ast.ProcVarBool:
+	elif type(expression) is ast.core.ProcVarBool:
 		out = {
 			"opcode": "argument_reporter_boolean",
 			"fields": {

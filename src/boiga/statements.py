@@ -1,10 +1,9 @@
 import json
 
-from . import ast
-from .utils import gen_uid
+from . import ast_core
 
 def serialise_statement(sprite, statement):
-	if not issubclass(type(statement), ast.Statement):
+	if not issubclass(type(statement), ast_core.Statement):
 		raise Exception(f"Cannot serialise {statement!r} as a statement")
 
 	blocks_json = sprite.blocks_json

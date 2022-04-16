@@ -7,6 +7,7 @@ import sys
 import subprocess
 
 from . import ast
+from . import ast_core
 from .expressions import serialise_expression
 from .statements import serialise_statement
 
@@ -33,7 +34,8 @@ class Project():
 				"meta": {
 					"semver": "3.0.0",
 					"vm": "0.2.0-prerelease.20210706190652",
-					"agent": "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0"
+					# plausible useragent string (dunno what the best long-term value is...)
+					"agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36"
 				} if stealthy else {
 					"semver": "3.0.0",
 					"vm": "0.0.1-com.github.davidbuchanan314.boiga",
@@ -90,7 +92,7 @@ class Sprite():
 		
 		self.variable_uids[name] = uid
 		self.variable_values[uid] = value
-		return ast.Var(self, name, uid)
+		return ast_core.Var(self, name, uid)
 	
 	def new_list(self, name, value=[], monitor=None):
 		if not type(name) is str:
@@ -117,7 +119,7 @@ class Sprite():
 				"visible": True
 			})
 		
-		return ast.List(self, name, uid)
+		return ast_core.List(self, name, uid)
 	
 	def add_script(self, stack):
 		self.scripts.append(stack)
@@ -130,6 +132,8 @@ class Sprite():
 				extension = path.split(".")[-1]
 		else:
 			data = data_or_path
+			if not extension:
+				raise Exception("Unspecified file extension")
 
 		self.costumes[name] = (data, extension, center)
 
@@ -153,10 +157,10 @@ class Sprite():
 					fmt += f" [{arg}]"
 
 		uid = gen_uid(["procproto", fmt])
-		proc_proto = ast.ProcProto(self, fmt, uid, turbo)
+		proc_proto = ast_core.ProcProto(self, fmt, uid, turbo)
 
 		for varname, vartype in zip(proc_proto.argnames, proc_proto.argtypes):
-			varinit = ast.ProcVarBool if vartype == "bool" else ast.ProcVar
+			varinit = ast_core.ProcVarBool if vartype == "bool" else ast_core.ProcVar
 			proc_proto.vars.append(
 				varinit(
 					self, proc_proto, varname,
@@ -165,7 +169,7 @@ class Sprite():
 				)
 			)
 		
-		procdef = ast.ProcDef(proc_proto)
+		procdef = ast_core.ProcDef(proc_proto)
 
 		self.add_script([procdef] + generator(procdef, *proc_proto.vars))
 
@@ -275,11 +279,11 @@ class Sprite():
 		#expression = expression.simplified() # experimental!
 		
 		# primitive expressions https://github.com/LLK/scratch-vm/blob/80e25f7b2a47ec2f3d8bb05fb62c7ceb8a1c99f0/src/serialization/sb3.js#L63
-		if type(expression) is ast.Literal:
+		if type(expression) is ast_core.Literal:
 			return [1, [10 if type(expression.value) is str else 4, str(expression.value)]]
-		if type(expression) is ast.LiteralColour:
+		if type(expression) is ast_core.LiteralColour:
 			return [1, [9, expression.value]]
-		if type(expression) is ast.Var:
+		if type(expression) is ast_core.Var:
 			self.block_count += 1
 			return [3, [12, expression.name, expression.uid], alternative]
 		
