@@ -48,7 +48,7 @@ class BLAKE3():
 				state[15] <= d,
 				locals.i <= 0,
 				locals.j <= 1,
-				repeatn(7*2*4*4) [
+				Repeat (7*2*4*4) [
 					tmp <= state[utils.CHACHA_LUT[locals.i+2]-1],
 
 					tmp2 <= (state[utils.CHACHA_LUT[locals.i+0]-1] +
@@ -80,15 +80,15 @@ class BLAKE3():
 			locals.num_blocks <= math.ceil(message_hex.len()/(64*2)) + (message_hex.len() == 0),
 			locals.i[:locals.num_blocks] >> [
 				locals.d <= 0,
-				IF (locals.i == 0) [
+				If (locals.i == 0) [
 					locals.d.changeby(self.BLAKE3_CHUNK_START)
 				],
-				IF (locals.i == locals.num_blocks - 1, [
+				If (locals.i == locals.num_blocks - 1) [
 					locals.d.changeby(self.BLAKE3_CHUNK_END | self.BLAKE3_ROOT),
 					locals.block_len <= (message_hex.len()/2) - ((locals.num_blocks-1)*64)
-				]).ELSE([
+				].Else [
 					locals.block_len <= 64
-				]),
+				],
 				msg.delete_all(),
 				locals.j[locals.i*128:locals.i*128+128:8] >> [
 					locals.tmp <= "",

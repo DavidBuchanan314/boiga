@@ -56,7 +56,7 @@ class BLAKE2s():
 				state[13] <= self.IV[5],
 				If (last == 1) [
 					state[14] <= self.IV[6] ^ 0xffff_ffff,
-				].Else()[
+				].Else [
 					state[14] <= self.IV[6],
 				],
 				state[15] <= self.IV[7],
@@ -98,7 +98,7 @@ class BLAKE2s():
 				If (locals.i == locals.num_blocks - 1) [
 					locals.last <= 1,
 					locals.t.changeby((message_hex.len()/2) - ((locals.num_blocks-1)*64))
-				].Else()[
+				].Else [
 					locals.t.changeby(64),
 					locals.last <= 0
 				],

@@ -208,7 +208,7 @@ class ChaChaPoly1305():
 				chacha20.decrypt(key_hex, 1, nonce_hex, msg_hex),
 				locals.hex_out <= chacha20.decrypt.hex_out,
 				locals.msg_valid <= "true",
-			].Else()[
+			].Else [
 				locals.hex_out <= "",
 				locals.msg_valid <= "false",
 			],

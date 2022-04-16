@@ -198,7 +198,7 @@ class Chat():
 					If (locals.prevmouse == "true") [
 						scrollpos <= locals.prevscrollpos + (MouseY() - locals.prevmousey),
 						scrolltarget <= scrollpos
-					].Else()[
+					].Else [
 						locals.prevscrollpos <= scrollpos,
 						locals.prevmousey <= MouseY()
 					],
@@ -214,7 +214,7 @@ class Chat():
 					If (MouseDown()) [
 						scrollpos <= (scrollpos - MIN_SCROLL) * 0.3 + MIN_SCROLL,
 						scrolltarget <= scrollpos
-					].Else()[
+					].Else [
 						scrolltarget <= MIN_SCROLL
 					],
 				],
@@ -222,7 +222,7 @@ class Chat():
 					If (MouseDown()) [
 						scrollpos <= (scrollpos - locals.max_scroll) * 0.3 + locals.max_scroll,
 						scrolltarget <= scrollpos
-					].Else()[
+					].Else [
 						scrolltarget <= locals.max_scroll
 					],
 				],
@@ -274,10 +274,10 @@ class Chat():
 						If (locals.firstspace == "true") [
 							locals.line <= locals.word,
 							locals.firstspace <= "false",
-						].Else()[
+						].Else [
 							locals.line <= locals.line.join(" ").join(locals.word),
 						]
-					].Else()[ # start a new line
+					].Else [ # start a new line
 						#chatlog.append(sender.join(locals.line)),
 						#locals.line <= "",
 						If (locals.word.len() > 32) [
@@ -291,7 +291,7 @@ class Chat():
 								],
 								locals.line <= locals.line.join(locals.word[locals.j]),
 							],
-						].Else()[
+						].Else [
 							chatlog.append(sender.join(locals.line)),
 							locals.line <= locals.word
 						],
@@ -302,7 +302,7 @@ class Chat():
 						locals.firstspace <= "true",
 					],
 					locals.word <= ""
-				].Else()[ # keep building the current word
+				].Else [ # keep building the current word
 					locals.word <= locals.word.join(message[locals.i])
 				],
 

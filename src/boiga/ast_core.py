@@ -271,14 +271,20 @@ class Statement():
 	def __repr__(self):
 		return f"Statement({self.op}, {self.args!r})"
 
+class ElseHack():
+	def __init__(self, condition, then):
+		self.condition = condition
+		self.then = then
+	
+	def __getitem__(self, do):
+		if type(do) != tuple:
+			do = [do]
+		return IfElseStatement(self.condition, self.then, list(do))
+
 class IfStatement(Statement):
 	def __init__(self, condition, then):
 		super().__init__("control_if", CONDITION=ensure_expression(condition), SUBSTACK=then)
-	
-	def Else(self, do=None):
-		if do is None:
-			return getitem_hack(self.Else)
-		return IfElseStatement(self.args["CONDITION"], self.args["SUBSTACK"], do)
+		self.Else = ElseHack(condition, then)
 
 class IfElseStatement(Statement):
 	def __init__(self, condition, then, elsedo):
@@ -394,9 +400,6 @@ class ProcVarBool(Expression):
 		return f"ProcVarBool({self.procproto.fmt!r}: {self.name})"
 
 
-# user-facing API
-
-
 def getitem_hack(fn, *args):
 	class GetitemHack():
 		def __init__(self, *args):
@@ -408,9 +411,6 @@ def getitem_hack(fn, *args):
 			return fn(*self.args, list(then))
 	
 	return GetitemHack(*args)
-
-
-# sugar (turns out it's not so easy to seperate sugar from core AST...)
 
 def varloop(var, _range, body): return [
 	var <= _range.start,
