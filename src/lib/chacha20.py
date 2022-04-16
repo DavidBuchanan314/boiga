@@ -18,7 +18,7 @@ class ChaCha20():
 				state_tmp.append(state[locals.i-1])
 			],
 			locals.i <= 0,
-			repeatn(20*4*4) [
+			Repeat (20*4*4) [
 				tmp <= state_tmp[utils.CHACHA_LUT[locals.i+2]-1],
 
 				tmp2 <= (state_tmp[utils.CHACHA_LUT[locals.i+0]-1] +
@@ -58,7 +58,7 @@ class ChaCha20():
 				state[locals.i+13] <= Literal("0x0").join(locals.tmp),
 			],
 			tmp_buf.delete_all(),
-			repeatn(math.ceil(msg_hex.len()/128)) [
+			Repeat (math.ceil(msg_hex.len()/128)) [
 				chacha20_core(),
 				locals.i[1:16+1] >> [
 					tmp_buf.append(state_tmp[locals.i-1] & 0xFF),
@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
 		stdout.append(chacha20.encrypt.hex_out),
 
-		IF (chacha20.encrypt.hex_out == test_result.hex()) [
+		If (chacha20.encrypt.hex_out == test_result.hex()) [
 			stdout.append("Test passed!")
 		]
 	])

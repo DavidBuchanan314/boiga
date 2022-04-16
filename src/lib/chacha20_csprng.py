@@ -22,7 +22,7 @@ class CSPRNG():
 					rng_tmp.append(rng_state[locals.i-1])
 				],
 				locals.i <= 0,
-				repeatn(20*4*4) [
+				Repeat(20*4*4) [
 					tmp <= rng_tmp[utils.CHACHA_LUT[locals.i+2]-1],
 
 					tmp2 <= (rng_tmp[utils.CHACHA_LUT[locals.i+0]-1] +
@@ -52,11 +52,11 @@ class CSPRNG():
 		def rng_add_entropy(locals): return [
 			locals.i[4:12] >> [
 				locals.shift <= 1,
-				repeatn (32) [
+				Repeat (32) [
 					locals.counter <= 0,
-					repeatuntil (locals.counter > 100) [
+					RepeatUntil (locals.counter > 100) [
 						locals.start <= DaysSince2k(),
-						repeatuntil(DaysSince2k() > locals.start) [
+						RepeatUntil (DaysSince2k() > locals.start) [
 							locals.counter <= locals.counter + 1
 						]
 					],
@@ -73,7 +73,7 @@ class CSPRNG():
 				rng_state.append(CHACHA20_INIT_STATE[i])
 				for i in range(4)
 			],
-			repeatn (12) [
+			Repeat (12) [
 				rng_state.append(0),
 			],
 			rng_add_entropy(),
@@ -83,7 +83,7 @@ class CSPRNG():
 		@cat.proc_def("rng_get_bytes [length]")
 		def rng_get_bytes(locals, length): return [
 			rng_bytes_out.delete_all(),
-			repeatn (math.ceil(length/64)) [
+			Repeat (math.ceil(length/64)) [
 				chacha20_rng_core(),
 				locals.i[:16] >> [
 					rng_bytes_out.append(rng_tmp[locals.i] & 0xff),
@@ -92,7 +92,7 @@ class CSPRNG():
 					rng_bytes_out.append((rng_tmp[locals.i] >> 24) & 0xff)
 				]
 			],
-			repeatuntil (rng_bytes_out.len() == length) [
+			RepeatUntil (rng_bytes_out.len() == length) [
 				rng_bytes_out.delete_at(rng_bytes_out.len() - 1)
 			]
 		]

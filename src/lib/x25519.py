@@ -78,7 +78,7 @@ class X25519():
 				locals.j[:RADICES[locals.i-1]] >> [
 					locals.bytebuf.changeby( ((locals.blah // locals.shift) & 1) * locals.bitshift ),
 					locals.bitshift.changeby(locals.bitshift),
-					IF (locals.bitshift == 1<<8) [
+					If (locals.bitshift == 1<<8) [
 						locals.bitshift <= 1,
 						out <= out.join(utils.HEX_LUT[locals.bytebuf]),
 						locals.bytebuf <= 0
@@ -235,7 +235,7 @@ class X25519():
 				int255cpy(A, C),
 				int255cpy(B, C),
 				modmul_body(), # C = C * C
-				IF ((locals.i != 2).AND(locals.i != 4)) [
+				If ((locals.i != 2).AND(locals.i != 4)) [
 					int255cpy(A, C),
 					int255cpy(B, inv_tmp),
 					modmul_body(), # C = C * inv_tmp
@@ -465,7 +465,7 @@ if __name__ == "__main__":
 		stdout.append(""),
 		stdout.append("Testing:"),
 
-		repeatuntil(Literal(1)==1)[
+		RepeatUntil (Literal(1)==1) [
 			stdout.append("Enter Scalar value (little-endian hex):"),
 			AskAndWait("Scalar:"),
 			locals.a <= Answer(),

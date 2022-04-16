@@ -64,7 +64,7 @@ class ChaChaPoly1305():
 				locals.j[:RADICES[locals.i-1]] >> [
 					locals.bytebuf.changeby( ((locals.blah // locals.shift) & 1) * locals.bitshift ),
 					locals.bitshift.changeby(locals.bitshift),
-					IF (locals.bitshift == 1<<8) [
+					If (locals.bitshift == 1<<8) [
 						locals.bitshift <= 1,
 						locals.hex_out <= locals.hex_out.join(utils.HEX_LUT[locals.bytebuf]),
 						locals.bytebuf <= 0
@@ -149,13 +149,13 @@ class ChaChaPoly1305():
 			
 			
 			C.delete_all(),
-			repeatn(6) [
+			Repeat (6) [
 				C.append(0)
 			],
 			
 
 			locals.msg_padded <= msg_hex,
-			repeatuntil (locals.msg_padded.len() % (16*2) == 0) [
+			RepeatUntil (locals.msg_padded.len() % (16*2) == 0) [
 				locals.msg_padded <= locals.msg_padded.join("00"),
 			],
 			locals.msg_padded <= locals.msg_padded
@@ -166,7 +166,7 @@ class ChaChaPoly1305():
 			
 			
 			locals.offset <= 0,
-			repeatn (locals.msg_padded.len()/(16*2)) [
+			Repeat (locals.msg_padded.len()/(16*2)) [
 				poly1305_split(locals.msg_padded, locals.offset),
 				B[5] <= B[5] + ((1<<19) * rtotals[5]), # add 1<<128
 
@@ -204,11 +204,11 @@ class ChaChaPoly1305():
 		@cat.proc_def()
 		def chacha20_poly1305_decrypt(locals, key_hex, nonce_hex, msg_hex, tag_hex): return [
 			chacha20_poly1305(key_hex, nonce_hex, msg_hex),
-			IF (poly1305_join.hex_out == tag_hex) [ # TODO: constant time comparison?
+			If (poly1305_join.hex_out == tag_hex) [ # TODO: constant time comparison?
 				chacha20.decrypt(key_hex, 1, nonce_hex, msg_hex),
 				locals.hex_out <= chacha20.decrypt.hex_out,
 				locals.msg_valid <= "true",
-			].ELSE()[
+			].Else()[
 				locals.hex_out <= "",
 				locals.msg_valid <= "false",
 			],
@@ -261,7 +261,7 @@ if __name__ == "__main__":
 			chachapoly_ct.hex()
 		),
 		stdout.append(chachapoly1305.join.hex_out),
-		IF (chachapoly1305.join.hex_out == chachapoly_tag.hex()) [
+		If (chachapoly1305.join.hex_out == chachapoly_tag.hex()) [
 			stdout.append("Test passed!"),
 		],
 		
@@ -271,7 +271,7 @@ if __name__ == "__main__":
 			msg.hex()
 		),
 		stdout.append(chachapoly1305.encrypt.ct_out.join(chachapoly1305.encrypt.tag_out)),
-		IF (chachapoly1305.encrypt.ct_out.join(chachapoly1305.encrypt.tag_out) == (chachapoly_ct+chachapoly_tag).hex()) [
+		If (chachapoly1305.encrypt.ct_out.join(chachapoly1305.encrypt.tag_out) == (chachapoly_ct+chachapoly_tag).hex()) [
 			stdout.append("Test passed!"),
 		],
 
@@ -283,7 +283,7 @@ if __name__ == "__main__":
 		),
 		stdout.append(chachapoly1305.decrypt.msg_valid),
 		stdout.append(chachapoly1305.decrypt.hex_out),
-		IF ((chachapoly1305.decrypt.msg_valid == "true").AND(chachapoly1305.decrypt.hex_out == msg.hex())) [
+		If ((chachapoly1305.decrypt.msg_valid == "true").AND(chachapoly1305.decrypt.hex_out == msg.hex())) [
 			stdout.append("Test passed!"),
 		],
 	])

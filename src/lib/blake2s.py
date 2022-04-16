@@ -54,15 +54,15 @@ class BLAKE2s():
 				[state[8+i] <= self.IV[i] for i in range(4)],
 				state[12] <= utils.bitxor(self.IV[4], t),
 				state[13] <= self.IV[5],
-				IF (last == 1, [
+				If (last == 1) [
 					state[14] <= self.IV[6] ^ 0xffff_ffff,
-				]).ELSE([
+				].Else()[
 					state[14] <= self.IV[6],
-				]),
+				],
 				state[15] <= self.IV[7],
 				locals.i <= 0,
 				locals.j <= 1,
-				repeatn(10*2*4*4) [
+				Repeat (10*2*4*4) [
 					tmp <= state[utils.CHACHA_LUT[locals.i+2]-1],
 
 					tmp2 <= (state[utils.CHACHA_LUT[locals.i+0]-1] +
@@ -95,13 +95,13 @@ class BLAKE2s():
 			locals.num_blocks <= math.ceil(message_hex.len()/(64*2)) + (message_hex.len() == 0),
 			locals.t <= 0,
 			locals.i[:locals.num_blocks] >> [
-				IF (locals.i == locals.num_blocks - 1, [
+				If (locals.i == locals.num_blocks - 1) [
 					locals.last <= 1,
 					locals.t.changeby((message_hex.len()/2) - ((locals.num_blocks-1)*64))
-				]).ELSE([
+				].Else()[
 					locals.t.changeby(64),
 					locals.last <= 0
-				]),
+				],
 				msg.delete_all(),
 				locals.j[locals.i*128:locals.i*128+128:8] >> [
 					locals.tmp <= "",
@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
 	if True:
 		cat.on_flag([
-			forever([
+			Forever([
 				AskAndWait(),
 				chat.new_message("<", Answer()),
 				chat.wait_for_animation(),

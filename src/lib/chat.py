@@ -131,22 +131,22 @@ class Chat():
 
 			locals.i <= math.floor(scrolly/-FONT_HEIGHT) - 1,
 
-			IF (locals.i < 1) [
+			If (locals.i < 1) [
 				locals.i <= 1
 			],
 
 			# scan upwards until first ""
-			repeatuntil (chatlog[locals.i] == Literal("")) [
+			RepeatUntil (chatlog[locals.i] == Literal("")) [
 				locals.i.changeby(-1)
 			],
 
-			repeatuntil ((locals.i > chatlog.len()-1).OR( locals.i > (math.floor((scrolly-360)/-FONT_HEIGHT) - 5) )) [
+			RepeatUntil ((locals.i > chatlog.len()-1).OR( locals.i > (math.floor((scrolly-360)/-FONT_HEIGHT) - 5) )) [
 				# find bubble height
 				locals.i.changeby(1),
 				locals.thisheight <= 0,
 				locals.longestline <= 2,
-				repeatuntil (chatlog[locals.i] == Literal("")) [
-					IF (chatlog[locals.i].len() > locals.longestline) [
+				RepeatUntil (chatlog[locals.i] == Literal("")) [
+					If (chatlog[locals.i].len() > locals.longestline) [
 						locals.longestline <= chatlog[locals.i].len()
 					],
 					locals.thisheight.changeby(1),
@@ -154,19 +154,19 @@ class Chat():
 				],
 
 				locals.i <= locals.i - locals.thisheight,
-				IF (chatlog[locals.i][0] == ">") [
+				If (chatlog[locals.i][0] == ">") [
 					draw_bubble_left(Literal(150) - ((locals.i-1) * FONT_HEIGHT) - scrolly, locals.longestline-2, locals.thisheight),
 
-					repeatn (locals.thisheight) [
+					Repeat (locals.thisheight) [
 						SetXYPos(-240+MARGIN_LEFT - 4, Literal(150 + 7) - ((locals.i-1) * FONT_HEIGHT) - scrolly),
 						draw_text(chatlog[locals.i]),
 						locals.i.changeby(1)
 					],
 				],
-				IF (chatlog[locals.i][0] == "<") [
+				If (chatlog[locals.i][0] == "<") [
 					draw_bubble_right(Literal(150) - ((locals.i-1) * FONT_HEIGHT) - scrolly, locals.longestline-2, locals.thisheight),
 
-					repeatn (locals.thisheight) [
+					Repeat (locals.thisheight) [
 						SetXYPos(Literal(240-MARGIN_LEFT - 4 + FONT_WIDTH*2) - chatlog[locals.i].len() * FONT_WIDTH, Literal(150 + 7) - ((locals.i-1) * FONT_HEIGHT) - scrolly),
 						draw_text(chatlog[locals.i]),
 						locals.i.changeby(1)
@@ -191,46 +191,46 @@ class Chat():
 
 		@cat.proc_def("gui_loop", turbo=False)
 		def gui_loop(locals): return [
-			forever([
+			Forever ([
 
 				# mouse drag scrolling
-				IF (MouseDown()) [
-					IF (locals.prevmouse == "true", [
+				If (MouseDown()) [
+					If (locals.prevmouse == "true") [
 						scrollpos <= locals.prevscrollpos + (MouseY() - locals.prevmousey),
 						scrolltarget <= scrollpos
-					]).ELSE([
+					].Else()[
 						locals.prevscrollpos <= scrollpos,
 						locals.prevmousey <= MouseY()
-					]),
+					],
 				],
 				locals.prevmouse <= MouseDown(),
 
 				# fancy bounce effect when scroll limits hit
 				locals.max_scroll <= get_max_scroll(),
-				IF (locals.max_scroll < MIN_SCROLL) [
+				If (locals.max_scroll < MIN_SCROLL) [
 					locals.max_scroll <= MIN_SCROLL
 				],
-				IF (scrolltarget < MIN_SCROLL) [
-					IF (MouseDown(), [
+				If (scrolltarget < MIN_SCROLL) [
+					If (MouseDown()) [
 						scrollpos <= (scrollpos - MIN_SCROLL) * 0.3 + MIN_SCROLL,
 						scrolltarget <= scrollpos
-					]).ELSE([
+					].Else()[
 						scrolltarget <= MIN_SCROLL
-					]),
+					],
 				],
-				IF (scrolltarget > locals.max_scroll) [
-					IF (MouseDown(), [
+				If (scrolltarget > locals.max_scroll) [
+					If (MouseDown()) [
 						scrollpos <= (scrollpos - locals.max_scroll) * 0.3 + locals.max_scroll,
 						scrolltarget <= scrollpos
-					]).ELSE([
+					].Else()[
 						scrolltarget <= locals.max_scroll
-					]),
+					],
 				],
 
 				# update velocity physics
 				velocity <= (velocity + (scrolltarget - scrollpos) * ACCEL) * DAMPING,
 				scrollpos <= scrollpos + velocity,
-				IF ((velocity < 0.01).AND(abs(scrolltarget - scrollpos) < 1)) [
+				If ((velocity < 0.01).AND(abs(scrolltarget - scrollpos) < 1)) [
 					velocity <= 0,
 					scrollpos <= scrolltarget
 				],
@@ -242,7 +242,9 @@ class Chat():
 
 		@cat.proc_def("wait_for_animation", turbo=False)
 		def wait_for_animation(locals): return [
-			repeatuntil((scrollpos == scrolltarget).AND(velocity == 0))[[]],
+			RepeatUntil ((scrollpos == scrolltarget).AND(velocity == 0)) [
+				[]
+			],
 			Wait(0),
 		]
 
@@ -266,53 +268,53 @@ class Chat():
 			locals.firstspace <= "true",
 			chatlog.append(""),
 
-			repeatn (message.len()+1) [
-				IF ((locals.i == message.len()).OR(message[locals.i] == " ").OR(message[locals.i] == "¶"), [ # end of a word
-					IF ((locals.line.len() + locals.word.len()) < 32, [ # we can add the word to the current line
-						IF (locals.firstspace == "true", [
+			Repeat (message.len()+1) [
+				If ((locals.i == message.len()).OR(message[locals.i] == " ").OR(message[locals.i] == "¶")) [ # end of a word
+					If ((locals.line.len() + locals.word.len()) < 32) [ # we can add the word to the current line
+						If (locals.firstspace == "true") [
 							locals.line <= locals.word,
 							locals.firstspace <= "false",
-						]).ELSE([
+						].Else()[
 							locals.line <= locals.line.join(" ").join(locals.word),
-						])
-					]).ELSE([ # start a new line
+						]
+					].Else()[ # start a new line
 						#chatlog.append(sender.join(locals.line)),
 						#locals.line <= "",
-						IF (locals.word.len() > 32, [
-							IF (locals.firstspace == "false") [
+						If (locals.word.len() > 32) [
+							If (locals.firstspace == "false") [
 								locals.word <= Literal(" ").join(locals.word),
 							],
 							locals.j[:locals.word.len()] >> [
-								IF (locals.line.len() > 31) [
+								If (locals.line.len() > 31) [
 									chatlog.append(sender.join(locals.line)),
 									locals.line <= "",
 								],
 								locals.line <= locals.line.join(locals.word[locals.j]),
 							],
-						]).ELSE([
+						].Else()[
 							chatlog.append(sender.join(locals.line)),
 							locals.line <= locals.word
-						]),
-					]),
-					IF (message[locals.i] == "¶") [
+						],
+					],
+					If (message[locals.i] == "¶") [
 						chatlog.append(sender.join(locals.line)),
 						locals.line <= "",
 						locals.firstspace <= "true",
 					],
 					locals.word <= ""
-				]).ELSE([ # keep building the current word
+				].Else()[ # keep building the current word
 					locals.word <= locals.word.join(message[locals.i])
-				]),
+				],
 
 				locals.i.changeby(1)
 			],
 
-			IF (locals.line.len() > 0) [
+			If (locals.line.len() > 0) [
 				chatlog.append(sender.join(locals.line)),
 			],
 
 			# handle zero-length messages
-			IF (message == "") [
+			If (message == "") [
 				chatlog.append(sender.join(" ")),
 			],
 
@@ -368,7 +370,7 @@ if __name__ == "__main__":
 
 		chat.new_message("<", "barfoo"),
 
-		forever([
+		Forever ([
 			AskAndWait(),
 			chat.new_message("<", Answer()),
 			Wait(1),

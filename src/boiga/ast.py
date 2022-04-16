@@ -1,6 +1,6 @@
 import math
 from . import ast_core as core
-from .ast_core import repeatn, repeatuntil, ensure_expression, Literal, LiteralColour
+from .ast_core import ensure_expression, Literal, LiteralColour
 
 # MOTION
 
@@ -34,13 +34,10 @@ class SetYPos(core.Statement):
 
 # LOOKS
 
-class Show(core.Statement):
-	def __init__(self):
-		self.op = "looks_show"
-
-class Hide(core.Statement):
-	def __init__(self):
-		self.op = "looks_hide"
+class SetCostume(core.Statement):
+	def __init__(self, costume):
+		super().__init__("looks_switchcostumeto",
+			COSTUME=ensure_expression(costume))
 
 class SetEffect(core.Statement):
 	def __init__(self, effect, value):
@@ -48,10 +45,13 @@ class SetEffect(core.Statement):
 			EFFECT=ensure_expression(effect),
 			VALUE=ensure_expression(value))
 
-class SetCostume(core.Statement):
-	def __init__(self, costume):
-		super().__init__("looks_switchcostumeto",
-			COSTUME=ensure_expression(costume))
+class Show(core.Statement):
+	def __init__(self):
+		self.op = "looks_show"
+
+class Hide(core.Statement):
+	def __init__(self):
+		self.op = "looks_hide"
 
 # END LOOKS
 
@@ -77,21 +77,31 @@ class Wait(core.Statement):
 	def __init__(self, duration):
 		super().__init__("control_wait", DURATION=ensure_expression(duration))
 
-def forever(do=None):
+Repeat = core.repeatn
+
+# TODO: convert to class
+def Forever(do=None):
 	if do is None:
 		return core.getitem_hack(forever)
 	return core.Statement("control_forever", SUBSTACK=do)
 
-def IF(condition, then=None):
+def If(condition, then=None):
 	if then is None:
-		return core.getitem_hack(IF, condition)
+		return core.getitem_hack(If, condition)
 	return core.IfStatement(condition, then)
+
+RepeatUntil = core.repeatuntil
 
 # END CONTROL
 
 # BEGIN SENSING
 
-class DaysSince2k(core.Expression):
+class AskAndWait(core.Statement):
+	def __init__(self, prompt=""):
+		self.op = "sensing_askandwait"
+		self.prompt = ensure_expression(prompt)
+
+class Answer(core.Expression):
 	def __init__(self):
 		pass
 
@@ -112,12 +122,7 @@ class CostumeNumber(core.Expression):
 	def __init__(self):
 		pass
 
-class AskAndWait(core.Statement):
-	def __init__(self, prompt=""):
-		self.op = "sensing_askandwait"
-		self.prompt = ensure_expression(prompt)
-
-class Answer(core.Expression):
+class DaysSince2k(core.Expression):
 	def __init__(self):
 		pass
 

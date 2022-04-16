@@ -78,7 +78,7 @@ cat.on_flag([
 	chat.new_message(">", Literal("Encrypted: ").join(x25519_client_pub).join(session_id).join("00000000").join(chachapoly1305.encrypt.ct_out).join(chachapoly1305.encrypt.tag_out)),
 	chat.wait_for_animation(),
 
-	forever([
+	Forever([
 		AskAndWait(),
 		chat.new_message("<", Answer()),
 		Wait(1),
