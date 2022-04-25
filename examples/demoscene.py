@@ -29,13 +29,13 @@ NBITS = 8
 PXSZ = 3
 for i in range(0, 1<<NBITS):
 	#im = Image.new("RGB", (NBITS*PXSZ, 1*PXSZ), (10, 10, 10))
-	im = Image.new("RGB", (NBITS, 1), (10, 10, 10))
+	im = Image.new("RGBA", (NBITS, 1), (10, 10, 10, 0))
 	for bit in range(NBITS):
 		if (i>>bit)&1 :
-			im.putpixel((bit, 0), (40, 140, 40))
+			im.putpixel((bit, 0), (40, 140, 40, 40))
 			#im.paste(px_on, (bit*PXSZ, 0))
 		else:
-			im.putpixel((bit, 0), (10, 10, 10))
+			im.putpixel((bit, 0), (10, 10, 10, 40))
 			#im.paste(px_off, (bit*PXSZ, 0))
 
 	buf = io.BytesIO()
@@ -78,7 +78,7 @@ def render(locals):
 	return [
 	#EraseAll(),
 	SetCostume("black"),
-	SetEffect("ghost", 80),
+	SetEffect("ghost", 30),
 	SetXYPos(0,0),
 	Stamp(),
 	SetPenSize(1),
@@ -236,31 +236,70 @@ def calcpx(locals, value):
 	return value
 
 @main.proc_def()
-def stamp_bench(locals): return [
+def render_rotozoom(locals, ticks): return [
 	locals.starttime <= millis_now,
 	If (locals.firstrun != "true") [
 		EraseAll(),
+		locals.tilt <= 0.0,
+		locals.roto <= 0.0,
+		locals.zoom <= 0.33,
+		locals.camx <= 0.0,
+		locals.velocity <= 0.0,
 		locals.firstrun <= "true",
+		locals.intro_done <= "false",
 	],
+	#SetXYPos(0, 0),
+	#SetEffect("brightness", 0),
 	#SetEffect("ghost", 90),
 	#SetCostume("black"),
 	#Stamp(),
+	#SetCostume("IBM_A"),
+
 	SetSize(200*PXSZ),
-	SetEffect("ghost", 70),
-	ChangeEffect("color", 2),
+	SetEffect("ghost", 0),
 	SetEffect("brightness", -30),
 	SetXYPos(-240, 180-70),
-	locals.roto.changeby(dt/(1000/60*2)),
-	locals.zoom <= ((millis_now/25).sin()*2.0+2.7)*0.15,
-	locals.camx.changeby((dt/locals.zoom)*0.05),
+	If (locals.intro_done == "true") [
+		ChangeEffect("color", dt/15),
+	].Else[
+		If (ticks > 120) [
+			locals.tilt <= (ticks-120)/100,
+			If (locals.tilt > 1.0) [
+				locals.tilt <= 1.0
+			]
+		],
+
+		If (ticks > 240) [
+			locals.velocity <= (ticks-240)/240,
+			If (locals.velocity > 1.0) [
+				locals.velocity <= 1.0,
+				locals.intro_done <= "true"
+			]
+		],
+	],
+
+	If (ticks > 60*45) [
+		Repeat (10) [
+			locals.x <= pickrandom(0, tex.len()-50),
+			tex[locals.x+locals.i] <= 255,
+			locals.i[1:50] >> [
+				tex[locals.x+locals.i] <= 0,
+			]
+		]
+	],
+
+	locals.roto.changeby((dt/(1000/60*2)) * locals.velocity),
+	locals.zoom <= ((millis_now/25).sin()*locals.velocity+1.4)*0.30,
+	locals.camx.changeby((dt/locals.zoom)*0.05*locals.velocity),
+
 	locals.rsin <= locals.roto.sin() / locals.zoom,
 	locals.rcos <= locals.roto.cos() / locals.zoom,
 	locals.py <= -100,
 	Repeat (220//PXSZ) [
 		SetXPos(-240),
 		locals.rspy <= locals.rsin*locals.py + locals.camx,
-		locals.rcpy <= locals.rcos*locals.py,
-		locals.xstep <= locals.py*-0.006+1,
+		locals.rcpy <= locals.rcos*locals.py + 60,
+		locals.xstep <= locals.py*-0.006*locals.tilt+1,
 		locals.px <= locals.xstep * -70,
 		Repeat (480//(PXSZ*NBITS)) [
 			SetCostume(calcpx(locals, Literal("BITS_"))),
@@ -269,10 +308,12 @@ def stamp_bench(locals): return [
 			locals.px.changeby(locals.xstep * NBITS)
 		],
 		ChangeYPos(-PXSZ),
-		locals.py.changeby(locals.xstep*2.0),
+		locals.py.changeby(locals.xstep*(Literal(1.0)+locals.tilt)),
 		ChangeEffect("brightness", 0.7),
 	],
 ]
+
+ROTOZOOM_START = 60*20*0
 
 main.on_flag([
 	Hide(),
@@ -280,20 +321,20 @@ main.on_flag([
 	#framectr <= 0,
 	lasthistupdate <= 0,
 	lastrainupdate <= 0,
-	stamp_bench.firstrun <= "false",
+	render_rotozoom.firstrun <= "false",
 	rain_msg <= "",
 	f0 <= millis_now,
 	Forever [
 		framectr <= ((millis_now-f0)/(1000/60)).__floor__(),
 		dt <= millis_now - framestart,
 		framestart <= millis_now,
-		If (framectr < 60*20*0) [
+		If (framectr < ROTOZOOM_START) [
 			render(),
 			render_matrix(rain_msg),
 			update_matrix(),
 			update(),
 		].Else [
-			stamp_bench(),
+			render_rotozoom(framectr-ROTOZOOM_START),
 		],
 	]
 ])
