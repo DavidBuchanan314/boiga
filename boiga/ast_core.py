@@ -60,8 +60,26 @@ class Expression():
 	def __round__(self):
 		return UnaryOp("round", self)
 	
+	def round(self):
+		return self.__round__()
+	
 	def __abs__(self):
 		return UnaryOp("abs", self)
+	
+	def sqrt(self):
+		return UnaryOp("sqrt", self)
+	
+	def sin(self):
+		return UnaryOp("sin", self)
+	
+	def cos(self):
+		return UnaryOp("cos", self)
+	
+	def log(self):
+		return UnaryOp("ln", self)
+
+	def log10(self):
+		return UnaryOp("log", self)
 	
 	def __rshift__(self, other):
 		if not type(other) is int:
@@ -136,6 +154,42 @@ class BinaryOp(Expression):
 	def simplified(self):
 		self.lval = self.lval.simplified()
 		self.rval = self.rval.simplified()
+
+		#print("simplifying:", self)
+		match self:
+			case BinaryOp(
+				lval=Literal(),
+				op="+"|"-"|"+"|"-"|"%",
+				rval=Literal()
+			):
+				return Literal(eval(f"{self.lval.value!r} {self.op} {self.rval.value!r}"))
+			
+			# foo + 0  =>  foo
+			case BinaryOp(op=("+"|"-"), rval=Literal(value=0)):
+				return self.lval
+			
+			# 0 + foo  =>  foo
+			case BinaryOp(op="+", lval=Literal(value=0)):
+				return self.rval
+
+			# ((foo + a) + b)  =>  (foo + (a+b))
+			case BinaryOp(
+				lval=BinaryOp(
+					lval=subexpr,
+					op=("+"|"-"),
+					rval=Literal()
+				),
+				op=("+"|"-"),
+				rval=Literal()
+			):
+				a = self.rval.value if self.op == "+" else -self.rval.value
+				b = self.lval.rval.value if self.lval.op == "+" else -self.lval.rval.value
+				val = a + b
+				if val == 0:
+					subexpr 
+				return BinaryOp("+", subexpr, val)
+
+
 		if type(self.lval) is Literal and type(self.rval) is Literal:
 			if self.op in ["+", "-", "+", "-", "%"] and type(self.lval.value) == type(self.rval.value):
 				#print("simplifying")
@@ -145,7 +199,6 @@ class BinaryOp(Expression):
 		# TODO: some nicer way to express this?
 		# ((foo + a) + b)  =>  (foo + a+b)
 		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "+" and type(self.lval.rval) is Literal:
-			#print("simplifying")
 			val = self.rval.value + self.lval.rval.value
 			if val == 0:
 				return self.lval.lval
@@ -153,7 +206,6 @@ class BinaryOp(Expression):
 		
 		# ((foo - a) + b)  =>  (foo + b-a)
 		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "-" and type(self.lval.rval) is Literal:
-			#print("simplifying")
 			val = self.rval.value - self.lval.rval.value
 			if val == 0:
 				return self.lval.lval

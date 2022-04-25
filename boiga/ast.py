@@ -42,8 +42,19 @@ class SetCostume(core.Statement):
 class SetEffect(core.Statement):
 	def __init__(self, effect, value):
 		super().__init__("looks_seteffectto",
-			EFFECT=ensure_expression(effect),
+			EFFECT=str(effect), # TODO: assert is str?
 			VALUE=ensure_expression(value))
+
+class ChangeEffect(core.Statement):
+	def __init__(self, effect, change):
+		super().__init__("looks_changeeffectby",
+			EFFECT=str(effect), # TODO: assert is str?
+			CHANGE=ensure_expression(change))
+
+class SetSize(core.Statement):
+	def __init__(self, size):
+		super().__init__("looks_setsizeto",
+			SIZE=ensure_expression(size))
 
 class Show(core.Statement):
 	def __init__(self):
@@ -164,7 +175,10 @@ class SetPenColour(core.Statement):
 		super().__init__("pen_setPenColorToColor", COLOR=colour)
 
 def RGBA(r, g, b, a):
-	return r << 16 | g << 8 | b | a << 24
+	return (ensure_expression(r) << 16) + \
+		(ensure_expression(g) << 8) + \
+		(ensure_expression(b)) + \
+		(ensure_expression(a) << 24)
 
 def RGB(r, g, b):
 	return RGBA(r, g, b, 0)
@@ -184,3 +198,6 @@ def sumchain(arr):
 	return result
 
 millis_now = DaysSince2k() * 86400000
+
+def nop(*args):
+	return []

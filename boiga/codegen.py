@@ -5,6 +5,7 @@ from zipfile import ZipFile
 import json
 import sys
 import subprocess
+import os
 
 from . import ast
 from . import ast_core
@@ -23,7 +24,7 @@ class Project():
 		self.sprites.append(sprite)
 		return sprite
 	
-	def save(self, filename, stealthy=False, execute=False):
+	def save(self, filename, stealthy=False, execute=False, capture=True):
 		self.used_layers = set() # used during serialisation
 		
 		with ZipFile(filename, "w") as zf:
@@ -63,7 +64,7 @@ class Project():
 					f.write(data)
 		
 		if execute:
-			subprocess.call(["../tools/run_scratch.js", filename])
+			return subprocess.run([os.path.dirname(__file__) + "/../tools/run_scratch.js", filename], check=True, capture_output=capture)
 
 
 class Sprite():
@@ -78,7 +79,7 @@ class Sprite():
 		self.scripts = []
 		self.costumes = {} # indexed by name
 		
-		self.current_costume = 1 # some way to adjust this?
+		self.current_costume = 0 # some way to adjust this?
 		self.volume = 100
 	
 	def new_var(self, name, value=""):

@@ -246,8 +246,36 @@ def serialise_statement(sprite, statement):
 				"COSTUME": sprite.serialise_arg(statement.args["COSTUME"], uid)
 			}
 		}
-
-	# TODO: set effect
+	
+	elif statement.op == "looks_seteffectto":
+		out = {
+			"opcode": statement.op,
+			"fields": {
+				"EFFECT": [statement.args["EFFECT"], None],
+			},
+			"inputs": { # TODO: insert correct sub-block
+				"VALUE": sprite.serialise_arg(statement.args["VALUE"], uid)
+			}
+		}
+	
+	elif statement.op == "looks_changeeffectby":
+		out = {
+			"opcode": statement.op,
+			"fields": {
+				"EFFECT": [statement.args["EFFECT"], None],
+			},
+			"inputs": { # TODO: insert correct sub-block
+				"CHANGE": sprite.serialise_arg(statement.args["CHANGE"], uid)
+			}
+		}
+	
+	elif statement.op == "looks_setsizeto":
+		out = {
+			"opcode": statement.op,
+			"inputs": {
+				"SIZE": sprite.serialise_arg(statement.args["SIZE"], uid)
+			}
+		}
 
 	# ======= pen =======
 
