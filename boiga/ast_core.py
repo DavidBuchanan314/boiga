@@ -184,7 +184,6 @@ class BinaryOp(Expression):
 
 			# foo + 0  =>  foo
 			case BinaryOp(op=("+"|"-"), rval=Literal(value=0)):
-				print("add0", simpler)
 				return simpler.lval
 			
 			# 0 + foo  =>  foo
@@ -207,29 +206,6 @@ class BinaryOp(Expression):
 				if val == 0:
 					return subexpr
 				return BinaryOp("+", subexpr, val)
-
-		return simpler
-
-		if type(simpler.lval) is Literal and type(simpler.rval) is Literal:
-			if simpler.op in ["+", "-", "+", "-", "%"] and type(simpler.lval.value) == type(simpler.rval.value):
-				#print("simplifying")
-				return Literal(eval(f"{simpler.lval.value!r} {simpler.op} {simpler.rval.value!r}"))
-		
-		# special case: chained addition
-		# TODO: some nicer way to express this?
-		# ((foo + a) + b)  =>  (foo + a+b)
-		if simpler.op == "+" and type(simpler.rval) is Literal and type(simpler.lval) is BinaryOp and simpler.lval.op == "+" and type(simpler.lval.rval) is Literal:
-			val = simpler.rval.value + simpler.lval.rval.value
-			if val == 0:
-				return simpler.lval.lval
-			return BinaryOp("+", simpler.lval.lval, val)
-		
-		# ((foo - a) + b)  =>  (foo + b-a)
-		if simpler.op == "+" and type(simpler.rval) is Literal and type(simpler.lval) is BinaryOp and simpler.lval.op == "-" and type(simpler.lval.rval) is Literal:
-			val = simpler.rval.value - simpler.lval.rval.value
-			if val == 0:
-				return simpler.lval.lval
-			return BinaryOp("+", simpler.lval.lval, val)
 
 		return simpler
 
