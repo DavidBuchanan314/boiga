@@ -166,6 +166,46 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 				"NUMBER_NAME": ["number", None]
 			},
 		}
+	
+	elif type(expression) is ast.Touching:
+		out = {
+			"opcode": "sensing_touchingobject",
+			"inputs": {
+				"TOUCHINGOBJECTMENU": sprite.serialise_arg(expression.thing, uid)
+			},
+		}
+	
+	elif type(expression) is ast.TouchingColour:
+		out = {
+			"opcode": "sensing_touchingcolor",
+			"inputs": {
+				"COLOR": sprite.serialise_arg(expression.colour, uid, alternative=[9, "#FF0000"])
+			},
+		}
+
+	elif type(expression) is ast.core.PenParamMenu:
+		out = {
+			"opcode": "pen_menu_colorParam",
+			"fields": {
+				"colorParam": [expression.param, None],
+			}
+		}
+	
+	elif type(expression) is ast.core.TouchingObjectMenu:
+		out = {
+			"opcode": "sensing_touchingobjectmenu",
+			"fields": {
+				"TOUCHINGOBJECTMENU": [expression.object, None],
+			}
+		}
+	
+	elif type(expression) is ast.core.Costume:
+		out = {
+			"opcode": "looks_costume",
+			"fields": {
+				"COSTUME": [expression.costumename, None],
+			}
+		}
 
 	else:
 		raise Exception(f"Unable to serialise expression {expression!r}")

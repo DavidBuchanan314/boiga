@@ -1,3 +1,4 @@
+from email.policy import default
 import json
 
 from . import ast_core
@@ -22,11 +23,27 @@ def serialise_statement(sprite, statement):
 			"opcode": "event_whenflagclicked"
 		}
 	
+	elif statement.op == "event_whenbroadcastreceived":
+		out = {
+			"opcode": "event_whenbroadcastreceived",
+			"fields": {
+				"BROADCAST_OPTION": statement.args["BROADCAST_OPTION"],
+			}
+		}
+
 	elif statement.op == "event_whenkeypressed":
 		out = {
 			"opcode": "event_whenkeypressed",
 			"fields": {
 				"KEY_OPTION": [statement.args["KEY_OPTION"], None],
+			}
+		}
+	
+	elif statement.op == "event_broadcastandwait":
+		out = {
+			"opcode": "event_broadcastandwait",
+			"inputs": {
+				"BROADCAST_INPUT": [1, [11, statement.args["BROADCAST_INPUT"], sprite.project.broadcasts[statement.args["BROADCAST_INPUT"]]]],
 			}
 		}
 	
@@ -243,10 +260,19 @@ def serialise_statement(sprite, statement):
 		out = {
 			"opcode": statement.op,
 			"inputs": { # TODO: insert correct sub-block
-				"COSTUME": sprite.serialise_arg(statement.args["COSTUME"], uid)
+				"COSTUME": sprite.serialise_arg(statement.args["COSTUME"], uid, alternative=sprite.serialise_expression(ast_core.Costume(next(iter(sprite.costumes.keys()))), uid, shadow=True))
 			}
 		}
 	
+	elif statement.op == "looks_say":
+		out = {
+			"opcode": statement.op,
+			"inputs": { 
+				"MESSAGE": sprite.serialise_arg(statement.args["MESSAGE"], uid)
+			}
+		}
+	
+
 	elif statement.op == "looks_seteffectto":
 		out = {
 			"opcode": statement.op,
@@ -297,6 +323,23 @@ def serialise_statement(sprite, statement):
 				"SIZE": sprite.serialise_arg(statement.args["SIZE"], uid)
 			}
 		}
+	
+	elif statement.op == "pen_setPenColorParamTo":
+		out = {
+			"opcode": "pen_setPenColorParamTo",
+			"inputs": {
+				"COLOR_PARAM": sprite.serialise_arg(statement.args["COLOR_PARAM"], uid),
+				"VALUE": sprite.serialise_arg(statement.args["VALUE"], uid)
+			}
+		}
+	
+	#elif statement.op == "pen_menu_colorParam":
+	#	out = {
+	#		"opcode": "pen_menu_colorParam",
+	#		"fields": {
+	#			"colorParam": [statement.args["colorParam"], None],
+	#		}
+	#	}
 
 	else:
 		raise Exception(f"I don't know how to serialise this op: {statement.op!r}")

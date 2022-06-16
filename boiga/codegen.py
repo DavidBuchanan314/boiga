@@ -17,6 +17,7 @@ class Project():
 		self.asset_data = {} # maps file name (md5.ext) to file contents
 		self.sprites = []
 		self.monitors = []
+		self.broadcasts = {} # maps broadcast names to uids
 		self.stage = self.new_sprite("Stage", is_stage=True)
 	
 	def new_sprite(self, name, is_stage=False):
@@ -82,7 +83,7 @@ class Sprite():
 		self.current_costume = 0 # some way to adjust this?
 		self.volume = 100
 	
-	def new_var(self, name, value=""):
+	def new_var(self, name, value="", monitor=None):
 		if not type(name) is str:
 			raise Exception("Variable name must be a string")
 		
@@ -93,6 +94,27 @@ class Sprite():
 		
 		self.variable_uids[name] = uid
 		self.variable_values[uid] = value
+
+		if monitor:
+			self.project.monitors.append({
+				"id": uid,
+				"mode": "default",
+				"opcode": "data_variable",
+				"params": {
+					"VARIABLE": name
+				},
+				"spriteName": None if self.name == "Stage" else self.name,
+				"value": [],
+				"width": 0,
+				"height": 0,
+				"x": monitor[0],
+				"y": monitor[1],
+				"visible": True,
+				"sliderMin": 0,
+				"sliderMax": 100,
+				"isDiscrete": True
+			})
+
 		return ast_core.Var(self, name, uid)
 	
 	def new_list(self, name, value=[], monitor=None):
@@ -140,13 +162,19 @@ class Sprite():
 
 	def on_flag(self, stack):
 		self.add_script(ast.on_flag(stack))
+	
+	def on_receive(self, event, stack):
+		if event not in self.project.broadcasts:
+			self.project.broadcasts[event] = gen_uid(["broadcast", event])
+
+		self.add_script(ast.on_receive(event, self.project.broadcasts[event], stack))
 
 	def on_press(self, key, stack):
 		self.add_script(ast.on_press(key, stack))
 
-	def proc_def(self, fmt=None, generator=None, turbo=True):
+	def proc_def(self, fmt=None, generator=None, locals_prefix=None, inline_only=False, turbo=True):
 		if generator is None: # function decorator hackery
-			return lambda generator: self.proc_def(fmt, generator, turbo)
+			return lambda generator: self.proc_def(fmt, generator, locals_prefix, inline_only, turbo)
 		
 		if fmt is None:
 			arg_names = generator.__code__.co_varnames[:generator.__code__.co_argcount]
@@ -158,7 +186,7 @@ class Sprite():
 					fmt += f" [{arg}]"
 
 		uid = gen_uid(["procproto", fmt])
-		proc_proto = ast_core.ProcProto(self, fmt, uid, turbo)
+		proc_proto = ast_core.ProcProto(self, fmt, uid, locals_prefix, turbo)
 
 		for varname, vartype in zip(proc_proto.argnames, proc_proto.argtypes):
 			varinit = ast_core.ProcVarBool if vartype == "bool" else ast_core.ProcVar
@@ -170,9 +198,10 @@ class Sprite():
 				)
 			)
 		
-		procdef = ast_core.ProcDef(proc_proto)
+		procdef = ast_core.ProcDef(proc_proto, generator)
 
-		self.add_script([procdef] + generator(procdef, *proc_proto.vars))
+		if not inline_only:
+			self.add_script([procdef] + generator(procdef, *proc_proto.vars))
 
 		return procdef
 	
@@ -290,6 +319,10 @@ class Sprite():
 		if type(expression) is ast_core.List:
 			self.block_count += 1
 			return [3, [13, expression.name, expression.uid], alternative]
+		if issubclass(type(expression), ast_core.MenuExpression):
+			print("MenuExpression detected!")
+			# todo: how does this affect block count?
+			return [1, self.serialise_expression(expression, parent, shadow=True)]
 		
 		# compound expressions
 		return [3, self.serialise_expression(expression, parent), alternative]

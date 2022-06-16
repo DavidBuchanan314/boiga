@@ -1,4 +1,5 @@
 import math
+
 from . import ast_core as core
 from .ast_core import ensure_expression, Literal, LiteralColour
 
@@ -36,8 +37,15 @@ class SetYPos(core.Statement):
 
 class SetCostume(core.Statement):
 	def __init__(self, costume):
+		if type(costume) is str:
+			costume = core.Costume(costume)
 		super().__init__("looks_switchcostumeto",
-			COSTUME=ensure_expression(costume))
+			COSTUME=costume)
+
+class Say(core.Statement):
+	def __init__(self, msg):
+		super().__init__("looks_say",
+			MESSAGE=ensure_expression(msg))
 
 class SetEffect(core.Statement):
 	def __init__(self, effect, value):
@@ -75,10 +83,17 @@ class Hide(core.Statement):
 def on_flag(substack=None):
 	return [core.Statement("event_whenflagclicked")] + substack
 
+def on_receive(event, event_uid, substack=None):
+	# TODO: use enum for key, check the argument is actually an enum field
+	return [core.Statement("event_whenbroadcastreceived", BROADCAST_OPTION=[str(event), event_uid])] + substack
 
 def on_press(key, substack=None):
 	# TODO: use enum for key, check the argument is actually an enum field
 	return [core.Statement("event_whenkeypressed", KEY_OPTION=str(key))] + substack
+
+class BroadcastAndWait(core.Statement):
+	def __init__(self, event):
+		super().__init__("event_broadcastandwait", BROADCAST_INPUT=str(event))
 
 # END EVENTS
 
@@ -121,6 +136,16 @@ class MouseDown(core.Expression):
 	type = "bool"
 	def __init__(self):
 		pass
+
+class Touching(core.Expression):
+	type = "bool"
+	def __init__(self, object):
+		self.thing = core.TouchingObjectMenu(object)
+
+class TouchingColour(core.Expression):
+	type = "bool"
+	def __init__(self, colour):
+		self.colour = colour
 
 class MouseX(core.Expression):
 	def __init__(self):
@@ -173,6 +198,11 @@ class SetPenColour(core.Statement):
 		elif type(colour) is not LiteralColour:
 			colour = ensure_expression(colour)+0 # TODO: only add zero if it's not an expression to begin with
 		super().__init__("pen_setPenColorToColor", COLOR=colour)
+
+
+class SetPenParam(core.Statement):
+	def __init__(self, param, value):
+		super().__init__("pen_setPenColorParamTo", COLOR_PARAM=core.PenParamMenu(param), VALUE=ensure_expression(value))
 
 def RGBA(r, g, b, a):
 	return (ensure_expression(r) << 16) + \

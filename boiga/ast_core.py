@@ -74,12 +74,21 @@ class Expression():
 	
 	def cos(self):
 		return UnaryOp("cos", self)
+
+	def atan(self):
+		return UnaryOp("atan", self)
 	
 	def log(self):
 		return UnaryOp("ln", self)
 
 	def log10(self):
 		return UnaryOp("log", self)
+	
+	def pow(self, other):
+		return UnaryOp("e ^", (self.log() * other))
+	
+	def root(self, other):
+		return UnaryOp("e ^", (self.log() / other))
 	
 	def __rshift__(self, other):
 		if not type(other) is int:
@@ -152,25 +161,35 @@ class BinaryOp(Expression):
 		return f"BinaryOpExpression({self.lval!r} {self.op} {self.rval!r})"
 	
 	def simplified(self):
-		self.lval = self.lval.simplified()
-		self.rval = self.rval.simplified()
+		# todo: don't modify in-place...
+		simpler = BinaryOp(self.op, self.lval.simplified(), self.rval.simplified())
+		#print(simpler)
 
 		#print("simplifying:", self)
-		match self:
+		match simpler:
 			case BinaryOp(
 				lval=Literal(),
-				op="+"|"-"|"+"|"-"|"%",
+				op="+"|"-"|"+"|"-"|"%"|"*"|"/",
 				rval=Literal()
 			):
-				return Literal(eval(f"{self.lval.value!r} {self.op} {self.rval.value!r}"))
+				return Literal(eval(f"{float(simpler.lval.value)!r} {simpler.op} {float(simpler.rval.value)!r}"))
 			
+			# foo * 1 => foo
+			case BinaryOp(op=("*"|"/"), rval=Literal(value=1)):
+				return simpler.lval
+
+			# 1 * foo => foo
+			case BinaryOp(lval=Literal(value=1), op="*"):
+				return simpler.rval
+
 			# foo + 0  =>  foo
 			case BinaryOp(op=("+"|"-"), rval=Literal(value=0)):
-				return self.lval
+				print("add0", simpler)
+				return simpler.lval
 			
 			# 0 + foo  =>  foo
-			case BinaryOp(op="+", lval=Literal(value=0)):
-				return self.rval
+			case BinaryOp(lval=Literal(value=0), op="+"):
+				return simpler.rval
 
 			# ((foo + a) + b)  =>  (foo + (a+b))
 			case BinaryOp(
@@ -182,36 +201,37 @@ class BinaryOp(Expression):
 				op=("+"|"-"),
 				rval=Literal()
 			):
-				a = self.rval.value if self.op == "+" else -self.rval.value
-				b = self.lval.rval.value if self.lval.op == "+" else -self.lval.rval.value
+				a = simpler.rval.value if simpler.op == "+" else -simpler.rval.value
+				b = simpler.lval.rval.value if simpler.lval.op == "+" else -simpler.lval.rval.value
 				val = a + b
 				if val == 0:
-					subexpr 
+					return subexpr
 				return BinaryOp("+", subexpr, val)
 
+		return simpler
 
-		if type(self.lval) is Literal and type(self.rval) is Literal:
-			if self.op in ["+", "-", "+", "-", "%"] and type(self.lval.value) == type(self.rval.value):
+		if type(simpler.lval) is Literal and type(simpler.rval) is Literal:
+			if simpler.op in ["+", "-", "+", "-", "%"] and type(simpler.lval.value) == type(simpler.rval.value):
 				#print("simplifying")
-				return Literal(eval(f"{self.lval.value!r} {self.op} {self.rval.value!r}"))
+				return Literal(eval(f"{simpler.lval.value!r} {simpler.op} {simpler.rval.value!r}"))
 		
 		# special case: chained addition
 		# TODO: some nicer way to express this?
 		# ((foo + a) + b)  =>  (foo + a+b)
-		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "+" and type(self.lval.rval) is Literal:
-			val = self.rval.value + self.lval.rval.value
+		if simpler.op == "+" and type(simpler.rval) is Literal and type(simpler.lval) is BinaryOp and simpler.lval.op == "+" and type(simpler.lval.rval) is Literal:
+			val = simpler.rval.value + simpler.lval.rval.value
 			if val == 0:
-				return self.lval.lval
-			return BinaryOp("+", self.lval.lval, val)
+				return simpler.lval.lval
+			return BinaryOp("+", simpler.lval.lval, val)
 		
 		# ((foo - a) + b)  =>  (foo + b-a)
-		if self.op == "+" and type(self.rval) is Literal and type(self.lval) is BinaryOp and self.lval.op == "-" and type(self.lval.rval) is Literal:
-			val = self.rval.value - self.lval.rval.value
+		if simpler.op == "+" and type(simpler.rval) is Literal and type(simpler.lval) is BinaryOp and simpler.lval.op == "-" and type(simpler.lval.rval) is Literal:
+			val = simpler.rval.value - simpler.lval.rval.value
 			if val == 0:
-				return self.lval.lval
-			return BinaryOp("+", self.lval.lval, val)
+				return simpler.lval.lval
+			return BinaryOp("+", simpler.lval.lval, val)
 
-		return self
+		return simpler
 
 
 class UnaryOp(Expression):
@@ -222,6 +242,9 @@ class UnaryOp(Expression):
 		if op == "!":
 			self.type = "bool"
 	
+	#def simplified(self):
+	#	return UnaryOp(self.op, self.value.simplified())
+
 	def __repr__(self):
 		return f"UnaryOpExpression({self.op}({self.value!r}))"
 
@@ -348,29 +371,31 @@ class IfElseStatement(Statement):
 
 
 class ProcDef(Statement):
-	def __init__(self, proto):
+	def __init__(self, proto, generator):
 		self.op = "procedures_definition"
 		self.proto = proto
+		self.generator = generator # todo: maybe store generator inside proto?
 	
 	def __call__(self, *args):
 		if len(args) != len(self.proto.vars):
 			raise Exception(f"{self!r} expects {len(self.proto.vars)} args, {len(args)} given")
 		
-		return ProcCall(self.proto, args)
+		return ProcCall(self, args, self.generator)
 	
 	def __getattr__(self, attr):
-		varname = self.proto.fmt + ":" + attr
+		varname = self.proto.locals_prefix + attr
 		return self.proto.sprite.new_var(varname)
 
 	def __repr__(self):
 		return f"ProcDef({self.proto!r})"
 
 class ProcProto(Statement):
-	def __init__(self, sprite, fmt, uid, turbo=True):
+	def __init__(self, sprite, fmt, uid, locals_prefix, turbo=True):
 		self.op = "procedures_prototype"
 		self.sprite = sprite
 		self.uid = uid
 		self.fmt = fmt
+		self.locals_prefix = fmt + ":" if locals_prefix is None else locals_prefix
 		self.turbo = turbo
 
 		# quick and dirty parser state machine
@@ -417,15 +442,20 @@ class ProcProto(Statement):
 
 
 class ProcCall(Statement):
-	def __init__(self, proc, args, turbo=True):
-		self.proc = proc
-		args = list(map(ensure_expression, args))
+	def __init__(self, proc, args, generator, turbo=True):
+		self.procdef = proc # todo: fix these field names lol
+		self.proc = proc.proto
+		self.argv = list(map(ensure_expression, args))
+		self.generator = generator
 
-		for arg, argtype in zip(args, proc.argtypes):
+		for arg, argtype in zip(self.argv, proc.proto.argtypes):
 			if argtype == "bool" and arg.type != "bool":
 				raise Exception("Cannot pass non-boolean expression to boolean proc arg")
 		
-		super().__init__("procedures_call", PROC=proc.uid, ARGS=args)
+		super().__init__("procedures_call", PROC=proc.proto.uid, ARGS=self.argv)
+	
+	def inline(self):
+		return self.generator(self.procdef, *self.argv) # todo use better variable namespacing
 
 
 class ProcVar(Expression):
@@ -491,8 +521,24 @@ def repeatuntil(cond, body=None):
 		return getitem_hack(repeatuntil, cond)
 	return Statement("control_repeat_until", CONDITION=ensure_expression(cond), SUBSTACK=body)
 
+class MenuExpression(Expression):
+	pass
 
+class PenParamMenu(MenuExpression):
+	def __init__(self, param):
+		self.op = "pen_menu_colorParam"
+		self.param = param
 
+# todo: probably need one of these for costume selection
+class TouchingObjectMenu(MenuExpression):
+	def __init__(self, object):
+		self.op = "sensing_touchingobjectmenu"
+		self.object = object
+
+class Costume(MenuExpression):
+	def __init__(self, costume):
+		self.op = "looks_costume"
+		self.costumename = costume
 
 if __name__ == "__main__":
 	class Sprite():
