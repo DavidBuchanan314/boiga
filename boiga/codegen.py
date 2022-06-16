@@ -25,7 +25,7 @@ class Project():
 		self.sprites.append(sprite)
 		return sprite
 	
-	def save(self, filename, stealthy=False, execute=False, capture=True):
+	def save(self, filename, stealthy=False, execute=False, capture=False):
 		self.used_layers = set() # used during serialisation
 		
 		with ZipFile(filename, "w") as zf:
