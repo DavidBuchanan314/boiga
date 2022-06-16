@@ -27,6 +27,9 @@ class Expression():
 	def __sub__(self, other):
 		return BinaryOp("-", self, other)
 	
+	def __neg__(self):
+		return Literal(0) - self
+	
 	def __mul__(self, other):
 		return BinaryOp("*", self, other)
 	
