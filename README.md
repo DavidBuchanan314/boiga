@@ -30,3 +30,30 @@ python3 -m examples
 ```
 
 NOTE: Requires Python 3.10 or above!
+
+`examples/helloworld.py` looks like this:
+
+```python
+from boiga import *
+
+project = Project()
+
+cat = project.new_sprite("Scratch Cat")
+cat.add_costume("scratchcat", "examples/assets/scratchcat.svg", center=(48, 50))
+
+cat.on_flag([
+	Say("Hello, world!"),
+])
+
+project.save("examples/out/Boiga Examples: Hello World.sb3")
+```
+
+Which compiles to the following scratch project:
+
+<img width="1019" alt="image" src="https://user-images.githubusercontent.com/13520633/174166081-4aa1f495-ac20-411d-aa53-0546c55339bd.png">
+
+Obviously, it's probably easier to write programs like that using the drag-and-drop interface. Conversely, `examples/branflakes.py` implements a brainf\*ck to Scratch compiler, which compiles a "99 bottles of beer" program into the following:
+
+<img width="256" alt="image" src="https://user-images.githubusercontent.com/13520633/174167667-56332085-44df-4768-a718-bfa00ab798ce.png">
+
+(This is just a preview, the whole script doesn't even come close to fitting in a single screenshot!)
