@@ -57,4 +57,4 @@ Obviously, it's probably easier to write programs like that using the drag-and-d
 
 <img width="256" alt="image" src="https://user-images.githubusercontent.com/13520633/174167667-56332085-44df-4768-a718-bfa00ab798ce.png">
 
-(This is just a preview, the whole script doesn't even come close to fitting in a single screenshot!)
+This is just a preview, the whole script doesn't even come close to fitting in a single screenshot! You can see the full scratch code [here](https://scratch.mit.edu/projects/677776603/).
