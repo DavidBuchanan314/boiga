@@ -19,6 +19,7 @@ If you plan to actually use this for something, you might want to make a copy of
 - Optional inlining of "custom blocks".
 
 ## TODO
+- Documentation (sorry lol - for now, just look at the examples)
 - Static allocation of "sub-lists" within lists
 - Dynamic allocation of space within lists (i.e. malloc)?
 - For both of the above, we can pass indices around like pointers
@@ -31,7 +32,7 @@ python3 -m examples
 
 NOTE: Requires Python 3.10 or above!
 
-`examples/helloworld.py` looks like this:
+[`examples/helloworld.py`](https://github.com/DavidBuchanan314/boiga/blob/main/examples/helloworld.py) looks like this:
 
 ```python
 from boiga import *
@@ -52,7 +53,7 @@ Which compiles to the following scratch project:
 
 <img width="1019" alt="image" src="https://user-images.githubusercontent.com/13520633/174166081-4aa1f495-ac20-411d-aa53-0546c55339bd.png">
 
-Obviously, it's probably easier to write programs like that using the drag-and-drop interface. Conversely, `examples/branflakes.py` implements a brainf\*ck to Scratch compiler, which compiles a "99 bottles of beer" program into the following:
+Obviously, it's probably easier to write programs like that using the drag-and-drop interface. Conversely, [`examples/branflakes.py`](https://github.com/DavidBuchanan314/boiga/blob/main/examples/branflakes.py) implements a brainf\*ck to Scratch compiler, which compiles a "99 bottles of beer" program into the following:
 
 <img width="256" alt="image" src="https://user-images.githubusercontent.com/13520633/174167667-56332085-44df-4768-a718-bfa00ab798ce.png">
 
