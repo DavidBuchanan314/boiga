@@ -87,21 +87,21 @@ class Expression():
 	def log10(self):
 		return UnaryOp("log", self)
 	
-	def pow(self, other):
+	def __pow__(self, other):
 		return UnaryOp("e ^", (self.log() * other))
 	
 	def root(self, other):
 		return UnaryOp("e ^", (self.log() / other))
 	
 	def __rshift__(self, other):
-		if not type(other) is int:
-			raise Exception("Can only rshift by constant (for now)")
-		return self // (1 << other)
+		if type(other) is int:
+			return self // (1 << other)
+		return self // math.round(Literal(2) ** other) # exponentiation relies on log, so results need rounding
 	
 	def __lshift__(self, other):
-		if not type(other) is int:
-			raise Exception("Can only lshift by constant (for now)")
-		return self * (1 << other)
+		if type(other) is int:
+			return self * (1 << other)
+		return self * math.round(Literal(2) ** other) # exponentiation relies on log, so results need rounding
 	
 	def __and__(self, other):
 		if not type(other) is int:

@@ -320,7 +320,7 @@ class Sprite():
 			self.block_count += 1
 			return [3, [13, expression.name, expression.uid], alternative]
 		if issubclass(type(expression), ast_core.MenuExpression):
-			print("MenuExpression detected!")
+			#print("MenuExpression detected!")
 			# todo: how does this affect block count?
 			return [1, self.serialise_expression(expression, parent, shadow=True)]
 		
