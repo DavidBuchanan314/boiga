@@ -34,7 +34,7 @@ class Project():
 			project = {
 				"targets": [s.serialise() for s in self.sprites],
 				"monitors": self.monitors,
-				"extensions": ["pen"],
+				"extensions": ["pen", "music"],
 				"meta": {
 					"semver": "3.0.0",
 					"vm": "0.2.0-prerelease.20210706190652",
