@@ -31,6 +31,18 @@ class SetYPos(core.Statement):
 		super().__init__("motion_sety",
 			Y=ensure_expression(y))
 
+class GetXPos(core.Expression):
+	def __init__(self):
+		pass
+
+class GetYPos(core.Expression):
+	def __init__(self):
+		pass
+
+class GetDirection(core.Expression):
+	def __init__(self):
+		pass
+
 # END MOTION
 
 # LOOKS
@@ -52,6 +64,15 @@ class SetEffect(core.Statement):
 		super().__init__("looks_seteffectto",
 			EFFECT=str(effect), # TODO: assert is str?
 			VALUE=ensure_expression(value))
+
+class Effects:
+	Color = "color"
+	Fisheye = "fisheye"
+	Whirl = "whirl"
+	Pixelate = "pixelate"
+	Mosaic = "mosaic"
+	Brightness = "brightness"
+	Ghost = "ghost"
 
 class ChangeEffect(core.Statement):
 	def __init__(self, effect, change):
@@ -80,13 +101,15 @@ class Hide(core.Statement):
 
 # EVENTS
 
+# TODO: move into core
 def on_flag(substack=None):
 	return [core.Statement("event_whenflagclicked")] + substack
 
+# TODO: move into core
 def on_receive(event, event_uid, substack=None):
-	# TODO: use enum for key, check the argument is actually an enum field
 	return [core.Statement("event_whenbroadcastreceived", BROADCAST_OPTION=[str(event), event_uid])] + substack
 
+# TODO: move into core
 def on_press(key, substack=None):
 	# TODO: use enum for key, check the argument is actually an enum field
 	return [core.Statement("event_whenkeypressed", KEY_OPTION=str(key))] + substack

@@ -78,7 +78,7 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 		out = {
 			"opcode": "data_itemnumoflist",
 			"inputs": {
-				"ITEM": sprite.sprite.serialise_arg(expression.item, uid)
+				"ITEM": sprite.serialise_arg(expression.item, uid)
 			},
 			"fields": {
 				"LIST": [
@@ -233,6 +233,21 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 	elif type(expression) is ast.GetTempo:
 		out = {
 			"opcode": "music_getTempo",
+		}
+	
+	elif type(expression) is ast.GetXPos:
+		out = {
+			"opcode": "motion_xposition",
+		}
+	
+	elif type(expression) is ast.GetYPos:
+		out = {
+			"opcode": "motion_yposition",
+		}
+	
+	elif type(expression) is ast.GetDirection:
+		out = {
+			"opcode": "motion_direction",
 		}
 
 	else:
