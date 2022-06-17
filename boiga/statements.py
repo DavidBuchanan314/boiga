@@ -347,15 +347,7 @@ def serialise_statement(sprite, statement):
 				"INSTRUMENT": sprite.serialise_arg(statement.args["INSTRUMENT"], uid, alternative=sprite.serialise_expression(ast_core.Instrument(1), uid, shadow=True)),
 			}
 		}
-		
-	elif statement.op == "music_midiSetInstrument":
-		out = {
-			"opcode": "music_midiSetInstrument",
-			"inputs": {
-				"INSTRUMENT": sprite.serialise_arg(statement.args["INSTRUMENT"], uid),
-			}
-		}
-		
+
 	elif statement.op == "music_setTempo":
 		out = {
 			"opcode": "music_setTempo",
@@ -363,7 +355,23 @@ def serialise_statement(sprite, statement):
 				"TEMPO": sprite.serialise_arg(statement.args["TEMPO"], uid),
 			}
 		}
-			
+	
+	elif statement.op == "music_changeTempo":
+		out = {
+			"opcode": "music_changeTempo",
+			"inputs": {
+				"TEMPO": sprite.serialise_arg(statement.args["TEMPO"], uid),
+			}
+		}
+
+	elif statement.op == "music_restForBeats":
+		out = {
+			"opcode": "music_restForBeats",
+			"inputs": {
+				"BEATS": sprite.serialise_arg(statement.args["BEATS"], uid),
+			}
+		}
+	
 	elif statement.op == "music_playNoteForBeats":
 		out = {
 			"opcode": "music_playNoteForBeats",
@@ -372,21 +380,12 @@ def serialise_statement(sprite, statement):
 				"BEATS": sprite.serialise_arg(statement.args["BEATS"], uid),
 			}
 		}
-		
+
 	elif statement.op == "music_playDrumForBeats":
 		out = {
 			"opcode": "music_playDrumForBeats",
 			"inputs": {
-				"DRUM": sprite.serialise_arg(statement.args["DRUM"], uid),
-				"BEATS": sprite.serialise_arg(statement.args["BEATS"], uid),
-			}
-		}
-		
-	elif statement.op == "music_midiPlayDrumForBeats":
-		out = {
-			"opcode": "music_midiPlayDrumForBeats",
-			"inputs": {
-				"DRUM": sprite.serialise_arg(statement.args["DRUM"], uid),
+				"DRUM": sprite.serialise_arg(statement.args["DRUM"], uid, alternative=sprite.serialise_expression(ast_core.Instrument(1), uid, shadow=True)),
 				"BEATS": sprite.serialise_arg(statement.args["BEATS"], uid),
 			}
 		}

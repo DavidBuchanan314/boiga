@@ -221,6 +221,19 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 				"INSTRUMENT": [expression.instrument, None],
 			}
 		}
+	
+	elif type(expression) is ast.core.Drum:
+		out = {
+			"opcode": expression.op,
+			"fields": {
+				"DRUM": [expression.drum, None],
+			}
+		}
+	
+	elif type(expression) is ast.GetTempo:
+		out = {
+			"opcode": "music_getTempo",
+		}
 
 	else:
 		raise Exception(f"Unable to serialise expression {expression!r}")

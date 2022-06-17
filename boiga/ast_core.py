@@ -526,6 +526,13 @@ class Instrument(MenuExpression):
 		self.op = "music_menu_INSTRUMENT"
 		self.instrument = instrument
 
+class Drum(MenuExpression):
+	def __init__(self, drum):
+		if type(drum) is not int:
+			raise TypeError()
+		self.op = "music_menu_DRUM"
+		self.drum = drum
+
 if __name__ == "__main__":
 	class Sprite():
 		name = "Sprite"

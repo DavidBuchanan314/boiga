@@ -219,7 +219,7 @@ class SetPenSize(core.Statement):
 
 # END PEN
 
-# BEGIN MIDI
+# BEGIN MUSIC
 
 class Instruments:
 	Piano = core.Instrument(1)
@@ -244,24 +244,40 @@ class Instruments:
 	SynthLead = core.Instrument(20)
 	SynthPad = core.Instrument(21)
 
+class Drums:
+	SnareDrum = core.Drum(1)
+	BassDrum = core.Drum(2)
+	SideStick = core.Drum(3)
+	CrashCymbal = core.Drum(4)
+	OpenHiHat = core.Drum(5)
+	ClosedHiHat = core.Drum(6)
+	Tambourine = core.Drum(7)
+	HandClap = core.Drum(8)
+	Claves = core.Drum(9)
+	WoodBlock = core.Drum(10)
+	Cowbell = core.Drum(11)
+	Triangle = core.Drum(12)
+	Bongo = core.Drum(13)
+	Conga = core.Drum(14)
+	Cabasa = core.Drum(15)
+	Guiro = core.Drum(16)
+	Vibraslap = core.Drum(17)
+	Cuica = core.Drum(18)
+
 class SetInstrument(core.Statement):
 	def __init__(self, instrument):
 		if not core.is_expression(instrument):
 			instrument = ensure_expression(instrument).join("")
 		super().__init__("music_setInstrument", INSTRUMENT=instrument)
-		
-class GetInstrument(core.Expression):
-	def __init__(self):
-		pass
-		
-class SetInstrumentMIDI(core.Statement):
-	def __init__(self, instrument):
-		super().__init__("music_midiSetInstrument", INSTRUMENT=ensure_expression(instrument))
-		
+
 class SetTempo(core.Statement):
 	def __init__(self, tempo):
 		super().__init__("music_setTempo", TEMPO=ensure_expression(tempo))
-		
+
+class ChangeTempoBy(core.Statement):
+	def __init__(self, tempo):
+		super().__init__("music_changeTempo", TEMPO=ensure_expression(tempo))
+
 class GetTempo(core.Expression):
 	def __init__(self):
 		pass
@@ -269,16 +285,18 @@ class GetTempo(core.Expression):
 class PlayNote(core.Statement):
 	def __init__(self, note, beats):
 		super().__init__("music_playNoteForBeats", NOTE=ensure_expression(note), BEATS=ensure_expression(beats))
-		
+
 class PlayDrum(core.Statement):
 	def __init__(self, drum, beats):
-		super().__init__("music_playDrumForBeats", DRUM=ensure_expression(drum), BEATS=ensure_expression(beats))
-		
-class PlayDrumMIDI(core.Statement):
-	def __init__(self, drum, beats):
-		super().__init__("music_midiPlayDrumForBeats", DRUM=ensure_expression(drum), BEATS=ensure_expression(beats))
+		if not core.is_expression(drum):
+			drum = ensure_expression(drum).join("")
+		super().__init__("music_playDrumForBeats", DRUM=drum, BEATS=ensure_expression(beats))
 
-# END MIDI
+class RestFor(core.Statement):
+	def __init__(self, beats):
+		super().__init__("music_restForBeats", BEATS=ensure_expression(beats))
+
+# END MUSIC
 
 # misc helpers
 
