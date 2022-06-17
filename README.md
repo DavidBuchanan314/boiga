@@ -17,6 +17,8 @@ If you plan to actually use this for something, you might want to make a copy of
 - Scratch .sb3 code generation.
 - Very basic AST optimisation (e.g. constant folding)
 - Optional inlining of "custom blocks".
+- Some bitwise operators.
+- 0-indexed lists.
 
 ## TODO
 - Documentation (sorry lol - for now, just look at the examples)
