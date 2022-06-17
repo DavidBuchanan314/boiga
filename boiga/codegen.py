@@ -28,6 +28,8 @@ class Project():
 	def save(self, filename, stealthy=False, execute=False, capture=False):
 		self.used_layers = set() # used during serialisation
 		
+		print(f"[*] Creating project: {filename!r}")
+
 		with ZipFile(filename, "w") as zf:
 			project = {
 				"targets": [s.serialise() for s in self.sprites],
@@ -64,6 +66,8 @@ class Project():
 				with zf.open(asset_name, "w") as f:
 					f.write(data)
 		
+		print(f"[*] Done writing {filename!r} ({os.path.getsize(filename)} bytes)")
+
 		if execute:
 			return subprocess.run([os.path.dirname(__file__) + "/../tools/run_scratch.js", filename], check=True, capture_output=capture)
 
