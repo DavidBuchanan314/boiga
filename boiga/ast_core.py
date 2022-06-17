@@ -96,12 +96,12 @@ class Expression():
 	def __rshift__(self, other):
 		if type(other) is int:
 			return self // (1 << other)
-		return self // math.round(Literal(2) ** other) # exponentiation relies on log, so results need rounding
+		return self // round(Literal(2) ** other) # exponentiation relies on log, so results need rounding
 	
 	def __lshift__(self, other):
 		if type(other) is int:
 			return self * (1 << other)
-		return self * math.round(Literal(2) ** other) # exponentiation relies on log, so results need rounding
+		return self * round(Literal(2) ** other) # exponentiation relies on log, so results need rounding
 	
 	def __and__(self, other):
 		if not type(other) is int:

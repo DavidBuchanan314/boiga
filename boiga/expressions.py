@@ -16,9 +16,8 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 		"topLevel": False,
 	}
 
-	# XXX: should round be in here? does it work?
 	UNARYMATHOPS = ["abs", "floor", "ceiling", "sqrt", "sin", "cos", "tan",
-		"asin", "acos", "atan", "ln", "log", "e ^", "10 ^", "round"]
+		"asin", "acos", "atan", "ln", "log", "e ^", "10 ^"]
 
 	if type(expression) is ast.core.BinaryOp:
 		opmap = {
@@ -103,6 +102,14 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 				"opcode": "operator_length",
 				"inputs": {
 					"STRING": sprite.serialise_arg(expression.value, uid),
+				},
+			}
+
+		elif expression.op == "round":
+			out = {
+				"opcode": "operator_round",
+				"inputs": {
+					"NUM": sprite.serialise_arg(expression.value, uid),
 				},
 			}
 
