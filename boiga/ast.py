@@ -217,7 +217,43 @@ class SetPenSize(core.Statement):
 	def __init__(self, size):
 		super().__init__("pen_setPenSizeTo", SIZE=ensure_expression(size))
 
- # END PEN
+# END PEN
+
+# BEGIN MIDI
+
+class SetInstrument(core.Statement):
+	def __init__(self, instrument):
+		super().__init__("music_setInstrument", INSTRUMENT=ensure_expression(instrument))
+		
+class GetInstrument(core.Expression):
+	def __init__(self):
+		pass
+		
+class SetInstrumentMIDI(core.Statement):
+	def __init__(self, instrument):
+		super().__init__("music_midiSetInstrument", INSTRUMENT=ensure_expression(instrument))
+		
+class SetTempo(core.Statement):
+	def __init__(self, tempo):
+		super().__init__("music_setTempo", TEMPO=ensure_expression(tempo))
+		
+class GetTempo(core.Expression):
+	def __init__(self):
+		pass
+
+class PlayNote(core.Statement):
+	def __init__(self, note, beats):
+		super().__init__("music_playNoteForBeats", NOTE=ensure_expression(note), BEATS=ensure_expression(beats))
+		
+class PlayDrum(core.Statement):
+	def __init__(self, drum, beats):
+		super().__init__("music_playDrumForBeats", DRUM=ensure_expression(drum), BEATS=ensure_expression(beats))
+		
+class PlayDrumMIDI(core.Statement):
+	def __init__(self, drum, beats):
+		super().__init__("music_midiPlayDrumForBeats", DRUM=ensure_expression(drum), BEATS=ensure_expression(beats))
+
+# END MIDI
 
 # misc helpers
 
