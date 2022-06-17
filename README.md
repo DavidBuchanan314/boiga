@@ -6,7 +6,7 @@ Have you ever attempted to author advanced or accelerated algorithms in Scratch?
 
 Boiga (ab)uses Python's operator overloading, to write Scratch expressions with intuitive(ish) Python syntax. We expose a simple AST representation, making it easy to write custom code generators and macros.
 
-See the examples directory for... examples.
+See the examples directory for... examples. Further usage examples can be seen in my [Scratch Cryptography Library](https://github.com/DavidBuchanan314/scratch-cryptography-library).
 
 ## Project Status:
 
