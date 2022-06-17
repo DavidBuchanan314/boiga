@@ -519,6 +519,13 @@ class Costume(MenuExpression):
 		self.op = "looks_costume"
 		self.costumename = costume
 
+class Instrument(MenuExpression):
+	def __init__(self, instrument):
+		if type(instrument) is not int:
+			raise TypeError()
+		self.op = "music_menu_INSTRUMENT"
+		self.instrument = instrument
+
 if __name__ == "__main__":
 	class Sprite():
 		name = "Sprite"

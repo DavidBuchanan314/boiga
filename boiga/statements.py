@@ -344,7 +344,7 @@ def serialise_statement(sprite, statement):
 		out = {
 			"opcode": "music_setInstrument",
 			"inputs": {
-				"INSTRUMENT": sprite.serialise_arg(statement.args["INSTRUMENT"], uid),
+				"INSTRUMENT": sprite.serialise_arg(statement.args["INSTRUMENT"], uid, alternative=sprite.serialise_expression(ast_core.Instrument(1), uid, shadow=True)),
 			}
 		}
 		

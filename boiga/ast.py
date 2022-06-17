@@ -221,9 +221,34 @@ class SetPenSize(core.Statement):
 
 # BEGIN MIDI
 
+class Instruments:
+	Piano = core.Instrument(1)
+	ElectricPiano = core.Instrument(2)
+	Organ = core.Instrument(3)
+	Guitar = core.Instrument(4)
+	ElectricGuitar = core.Instrument(5)
+	Bass = core.Instrument(6)
+	Pizzicato = core.Instrument(7)
+	Cello = core.Instrument(8)
+	Trombone = core.Instrument(9)
+	Clarinet = core.Instrument(10)
+	Saxophone = core.Instrument(11)
+	Flute = core.Instrument(12)
+	WoodenFlute = core.Instrument(13)
+	Bassoon = core.Instrument(14)
+	Choir = core.Instrument(15)
+	Vibraphone = core.Instrument(16)
+	MusicBox = core.Instrument(17)
+	SteelDrum = core.Instrument(18)
+	Marimba = core.Instrument(19)
+	SynthLead = core.Instrument(20)
+	SynthPad = core.Instrument(21)
+
 class SetInstrument(core.Statement):
 	def __init__(self, instrument):
-		super().__init__("music_setInstrument", INSTRUMENT=ensure_expression(instrument))
+		if not core.is_expression(instrument):
+			instrument = ensure_expression(instrument).join("")
+		super().__init__("music_setInstrument", INSTRUMENT=instrument)
 		
 class GetInstrument(core.Expression):
 	def __init__(self):
