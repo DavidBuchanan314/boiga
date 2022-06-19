@@ -288,17 +288,26 @@ class List(Expression):
 	def delete_at(self, other):
 		return Statement("data_deleteoflist", LIST=self, INDEX=(ensure_expression(other)+1).simplified())
 
+	def delete_at1(self, other):
+		return Statement("data_deleteoflist", LIST=self, INDEX=ensure_expression(other))
+
 	def len(self):
 		return UnaryOp("listlen", self)
 	
 	def index(self, other):
 		return ListItemNum(self, other) - 1
 
+	def index1(self, other):
+		return ListItemNum(self, other)
+
 	def __repr__(self):
 		return f"ListVar({self.sprite.name}: {self.name})"
 	
 	def __getitem__(self, index):
 		return ListIndex(self, (ensure_expression(index)+1).simplified())
+	
+	def item(self, one_index):
+		return ListIndex(self, one_index)
 
 class ListItemNum(Expression):
 	def __init__(self, list_, item):

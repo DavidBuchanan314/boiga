@@ -222,13 +222,24 @@ cat.on_flag([
 	#a.hide(),
 
 	mylist.append("thing"),
+
 	mylist.delete_at(0),
+	mylist.delete_at1(1), #  1-index alternative to the above
+
 	mylist.delete_all(),
+
 	#mylist.insert_at(0, "thing"),
+	#mylist.insert_at1(1, "thing"), #  1-index alternative to the above
+
 	mylist[0] <= "thing",
+	mylist.item(1) <= "thing", #  1-index alternative to the above
 
 	Say(mylist[0]),
+	Say(mylist.item(1)), #  1-index alternative to the above
+
 	Say(mylist.index("thing")),
+	Say(mylist.index1("thing")), #  1-index alternative to the above
+
 	#Say(mylist.contains("thing")),
 
 	#mylist.show(),
