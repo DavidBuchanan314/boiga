@@ -114,6 +114,9 @@ class Expression():
 	def __getitem__(self, other):
 		return BinaryOp("[]", ensure_expression(other+1).simplified(), self)
 
+	def item(self, other):
+		return BinaryOp("[]", ensure_expression(other), self)
+
 	def len(self):
 		return UnaryOp("len", self)
 

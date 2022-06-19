@@ -193,6 +193,7 @@ cat.on_flag([
 
 	Say(Literal("apple").join("banana")),
 	Say(Literal("apple")[0]),
+	Say(Literal("apple").item(1)),  #  1-index alternative to the above
 	Say(Literal("apple").len()),
 	#Say(Literal("apple").contains("a")),
 
