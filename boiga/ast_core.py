@@ -174,11 +174,16 @@ class BinaryOp(Expression):
 		#print("simplifying:", self)
 		match simpler:
 			case BinaryOp(
-				lval=Literal(),
+				lval=Literal(value=int()|float()),
 				op="+"|"-"|"+"|"-"|"%"|"*"|"/",
-				rval=Literal()
+				rval=Literal(value=int()|float())
 			):
-				return Literal(eval(f"{float(simpler.lval.value)!r} {simpler.op} {float(simpler.rval.value)!r}"))
+				# convert the inputs to floats, to emulate scratch's arithmetic
+				# TODO: don't use eval here
+				value = eval(f"{float(simpler.lval.value)} {simpler.op} {float(simpler.rval.value)}")
+				if value == math.floor(value):
+					value = int(value)
+				return Literal(value)
 			
 			# foo * 1 => foo
 			case BinaryOp(op=("*"|"/"), rval=Literal(value=1)):
