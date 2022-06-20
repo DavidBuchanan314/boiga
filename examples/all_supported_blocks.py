@@ -1,5 +1,4 @@
 from math import floor, ceil
-from numpy import broadcast
 from boiga import *
 
 project = Project()
