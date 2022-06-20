@@ -95,6 +95,18 @@ def serialise_statement(sprite, statement):
 				"DURATION": sprite.serialise_arg(statement.args["DURATION"], uid)
 			}
 		}
+	elif statement.op == "control_stop":
+		out = {
+			"opcode": "control_stop",
+			"fields": {
+				"STOP_OPTION": [statement.args["STOP_OPTION"], None]
+			},
+			"mutation": {
+				"tagName": "mutation",
+				"children": [],
+				"hasnext": "true" if statement.args["STOP_OPTION"] == "other scripts in sprite" else "false"
+			},
+		}
 	
 	# ===== DATA =======
 	elif statement.op == "data_setvariableto":

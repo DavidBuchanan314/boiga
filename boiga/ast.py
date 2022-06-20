@@ -142,6 +142,15 @@ def If(condition, then=None):
 
 RepeatUntil = core.repeatuntil
 
+def StopAll():
+	return core.Statement("control_stop", STOP_OPTION="all")
+
+def StopThisScript():
+	return core.Statement("control_stop", STOP_OPTION="this script")
+
+def StopOtherScriptsInSprite():
+	return core.Statement("control_stop", STOP_OPTION="other scripts in sprite")
+
 # END CONTROL
 
 # BEGIN SENSING

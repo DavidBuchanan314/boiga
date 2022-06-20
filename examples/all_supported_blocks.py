@@ -136,9 +136,13 @@ cat.on_flag([
 		Say("foo"), # TODO: allow empty body?
 	],
 
-	#StopAll(),
-	#StopThisScript(),
-	#StopOtherScriptsInSprite(),
+	If (Literal(1) == 2) [
+		StopAll(),
+	],
+	If (Literal(1) == 2) [
+		StopThisScript(),
+	],
+	StopOtherScriptsInSprite(),
 
 	#CreateClone(),
 	#DeleteThisClone(),
