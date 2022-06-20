@@ -165,16 +165,16 @@ class Sprite():
 		self.costumes[name] = (data, extension, center)
 
 	def on_flag(self, stack):
-		self.add_script(ast.on_flag(stack))
+		self.add_script(ast_core.on_flag(stack))
 	
 	def on_receive(self, event, stack):
 		if event not in self.project.broadcasts:
 			self.project.broadcasts[event] = gen_uid(["broadcast", event])
 
-		self.add_script(ast.on_receive(event, self.project.broadcasts[event], stack))
+		self.add_script(ast_core.on_receive(event, self.project.broadcasts[event], stack))
 
 	def on_press(self, key, stack):
-		self.add_script(ast.on_press(key, stack))
+		self.add_script(ast_core.on_press(key, stack))
 
 	def proc_def(self, fmt=None, generator=None, locals_prefix=None, inline_only=False, turbo=True):
 		if generator is None: # function decorator hackery

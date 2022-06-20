@@ -534,6 +534,16 @@ def repeatuntil(cond, body=None):
 		return getitem_hack(repeatuntil, cond)
 	return Statement("control_repeat_until", CONDITION=ensure_expression(cond), SUBSTACK=body)
 
+def on_flag(substack=None):
+	return [Statement("event_whenflagclicked")] + substack
+
+def on_receive(event, event_uid, substack=None):
+	return [Statement("event_whenbroadcastreceived", BROADCAST_OPTION=[str(event), event_uid])] + substack
+
+def on_press(key, substack=None):
+	# TODO: use enum for key, check the argument is actually an enum field
+	return [Statement("event_whenkeypressed", KEY_OPTION=str(key))] + substack
+
 class MenuExpression(Expression):
 	pass
 

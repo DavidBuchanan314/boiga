@@ -101,19 +101,6 @@ class Hide(core.Statement):
 
 # EVENTS
 
-# TODO: move into core
-def on_flag(substack=None):
-	return [core.Statement("event_whenflagclicked")] + substack
-
-# TODO: move into core
-def on_receive(event, event_uid, substack=None):
-	return [core.Statement("event_whenbroadcastreceived", BROADCAST_OPTION=[str(event), event_uid])] + substack
-
-# TODO: move into core
-def on_press(key, substack=None):
-	# TODO: use enum for key, check the argument is actually an enum field
-	return [core.Statement("event_whenkeypressed", KEY_OPTION=str(key))] + substack
-
 class BroadcastAndWait(core.Statement):
 	def __init__(self, event):
 		super().__init__("event_broadcastandwait", BROADCAST_INPUT=str(event))
