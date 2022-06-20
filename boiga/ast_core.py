@@ -324,6 +324,9 @@ class List(Expression):
 	
 	def item(self, one_index):
 		return ListIndex(self, one_index)
+	
+	def contains(self, thing):
+		return ListContains(self, thing)
 
 class ListItemNum(Expression):
 	def __init__(self, list_, item):
@@ -341,6 +344,12 @@ class ListIndex(Expression):
 	
 	def __repr__(self):
 		return f"{self.list!r}[{self.index!r}]"
+
+class ListContains(Expression):
+	type = "bool"
+	def __init__(self, list_, thing):
+		self.list = list_
+		self.thing = ensure_expression(thing)
 
 class Statement():
 	def __init__(self, op, **args):

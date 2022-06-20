@@ -87,6 +87,20 @@ def serialise_expression(sprite, expression, parent, shadow=False):
 				]
 			},
 		}
+	
+	elif type(expression) is ast.core.ListContains:
+		out = {
+			"opcode": "data_listcontainsitem",
+			"inputs": {
+				"ITEM": sprite.serialise_arg(expression.thing, uid)
+			},
+			"fields": {
+				"LIST": [
+					expression.list.name,
+					expression.list.uid
+				]
+			},
+		}
 
 	elif type(expression) is ast.core.UnaryOp:
 		if expression.op == "!":

@@ -244,7 +244,7 @@ cat.on_flag([
 	Say(mylist.index("thing")),
 	Say(mylist.index1("thing")), #  1-index alternative to the above
 
-	#Say(mylist.contains("thing")),
+	Say(mylist.contains("thing")),
 
 	#mylist.show(),
 	#mylist.hide(),
