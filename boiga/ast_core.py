@@ -1,4 +1,5 @@
 import math
+import operator
 
 
 def is_expression(value):
@@ -175,14 +176,21 @@ class BinaryOp(Expression):
 		match simpler:
 			case BinaryOp(
 				lval=Literal(value=int()|float()),
-				op="+"|"-"|"+"|"-"|"%"|"*"|"/",
+				op="+"|"-"|"%"|"*"|"/",
 				rval=Literal(value=int()|float())
 			):
+				opmap = {
+					"+": operator.add,
+					"-": operator.sub,
+					"%": operator.mod,
+					"*": operator.mul,
+					"/": operator.truediv,
+				}
+
 				# convert the inputs to floats, to emulate scratch's arithmetic
-				# TODO: don't use eval here
-				value = eval(f"{float(simpler.lval.value)} {simpler.op} {float(simpler.rval.value)}")
+				value =  opmap[simpler.op](float(simpler.lval.value), float(simpler.rval.value))
 				if value == math.floor(value):
-					value = int(value)
+					value = int(value) # if we can, convert back to int, to avoid redundant ".0"s in the output
 				return Literal(value)
 			
 			# foo * 1 => foo
