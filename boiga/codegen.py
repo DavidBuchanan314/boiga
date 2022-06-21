@@ -26,13 +26,14 @@ class Project():
 		return sprite
 	
 	def save(self, filename, stealthy=False, execute=False, capture=False):
+		self.asset_data = {}
 		self.used_layers = set() # used during serialisation
 		
-		print(f"[*] Creating project: {filename!r}")
+		print(f"[*] Creating sb3 project file: {filename!r}")
 
 		with ZipFile(filename, "w") as zf:
 			project = {
-				"targets": [s.serialise() for s in self.sprites],
+				"targets": [s.serialise(self.used_layers) for s in self.sprites],
 				"monitors": self.monitors,
 				"extensions": ["pen", "music"],
 				"meta": {
@@ -209,7 +210,26 @@ class Sprite():
 
 		return procdef
 	
-	def serialise(self):
+	def save(self, filename):
+		self.project.asset_data = {} # XXX these are both written to by sprite.serialize() - they should probably be returned by it instead
+
+		print(f"[*] Creating sprite3 file: {filename!r}")
+		with ZipFile(filename, "w") as zf:
+			with zf.open("sprite.json", "w") as spritefile:
+				serialised = self.serialise()
+				print(f"[*] Serialised {len(serialised['blocks']) + self.block_count} blocks")
+				json_blob = json.dumps(serialised).encode()
+				print(f"[*] sprite.json size: {len(json_blob)}")
+				spritefile.write(json_blob)
+
+
+			for asset_name, data in self.project.asset_data.items():
+				with zf.open(asset_name, "w") as f:
+					f.write(data)
+		
+		print(f"[*] Done writing {filename!r} ({os.path.getsize(filename)} bytes)")
+
+	def serialise(self, used_layers=None):
 		self.block_count = 0
 		self.blocks_json = {}
 		self.hat_count = 0
@@ -240,13 +260,16 @@ class Sprite():
 			"volume": self.volume
 		}
 		
-		# find the next unused layer
-		for i in range(99999999):
-			if i not in self.project.used_layers:
-				sprite["layerOrder"] = i
-				break
-		else:
-			raise Exception("Too many layers?!??!")
+		# we don't care about this if we're serialising for a .sprite3
+		if used_layers is not None:
+			# find the next unused layer
+			for i in range(99999999):
+				if i not in used_layers:
+					sprite["layerOrder"] = i
+					used_layers.add(i)
+					break
+			else:
+				raise Exception("Too many layers?!??!")
 		
 		if self.is_stage:
 			sprite.update({
@@ -265,9 +288,6 @@ class Sprite():
 				"draggable": False,
 				"rotationStyle": "all around"
 			})
-		
-		# keep track of which layers are occupied
-		self.project.used_layers.add(sprite["layerOrder"])
 		
 		for costume_name, (data, extension, center) in self.costumes.items():
 			md5 = hashlib.md5(data).hexdigest()
