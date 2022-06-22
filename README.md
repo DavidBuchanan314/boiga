@@ -8,6 +8,8 @@ Boiga (ab)uses Python's operator overloading, to write Scratch expressions with 
 
 See the examples directory for... examples. Further usage examples can be seen in my [Scratch Cryptography Library](https://github.com/DavidBuchanan314/scratch-cryptography-library).
 
+See also: [scratch-vscode](https://github.com/DavidBuchanan314/scratch-vscode) - A vscode extension that lets you preview Scratch projects right in your editor, with live reload.
+
 ## Project Status:
 
 It's a working prototype. Not all blocks are supported, but you can use this to write non-trivial scratch projects.
