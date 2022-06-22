@@ -1,4 +1,5 @@
 import hashlib
+import io
 
 from .utils import flatten, gen_uid, BLANK_SVG
 from zipfile import ZipFile
@@ -31,7 +32,8 @@ class Project():
 		
 		print(f"[*] Creating sb3 project file: {filename!r}")
 
-		with ZipFile(filename, "w") as zf:
+		zip_buf = io.BytesIO()
+		with ZipFile(zip_buf, "w") as zf:
 			project = {
 				"targets": [s.serialise(self.used_layers) for s in self.sprites],
 				"monitors": self.monitors,
@@ -67,7 +69,14 @@ class Project():
 				with zf.open(asset_name, "w") as f:
 					f.write(data)
 		
-		print(f"[*] Done writing {filename!r} ({os.path.getsize(filename)} bytes)")
+		# we buffer the zip in memory, and write it to disk in a single write,
+		# to avoid tripping up programs like inotify/fswatch
+		# TODO: do this for .sprite3 exports too
+		zip_bytes = zip_buf.getvalue()
+		with open(filename, "wb") as zf:
+			zf.write(zip_bytes)
+
+		print(f"[*] Done writing {filename!r} ({len(zip_bytes)} bytes)")
 
 		if execute:
 			return subprocess.run([os.path.dirname(__file__) + "/../tools/run_scratch.js", filename], check=True, capture_output=capture)
