@@ -185,6 +185,12 @@ cat.on_flag([
 	Say(a * b),
 	Say(a / b),
 
+	# reflected operators
+	Say(5 + b),
+	Say(5 - b),
+	Say(5 * b),
+	Say(5 / b),
+
 	Say(pickrandom(1, 10)),
 
 	Say(a > b),

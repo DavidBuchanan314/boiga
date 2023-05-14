@@ -25,8 +25,14 @@ class Expression():
 	def __add__(self, other):
 		return BinaryOp("+", self, other)
 	
+	def __radd__(self, other):
+		return BinaryOp("+", other, self)
+	
 	def __sub__(self, other):
 		return BinaryOp("-", self, other)
+
+	def __rsub__(self, other):
+		return BinaryOp("-", other, self)
 	
 	def __neg__(self):
 		return Literal(0) - self
@@ -34,14 +40,26 @@ class Expression():
 	def __mul__(self, other):
 		return BinaryOp("*", self, other)
 	
+	def __rmul__(self, other):
+		return BinaryOp("*", other, self)
+	
 	def __mod__(self, other):
 		return BinaryOp("%", self, other)
+	
+	def __rmod__(self, other):
+		return BinaryOp("%", other, self)
 	
 	def __truediv__(self, other):
 		return BinaryOp("/", self, other)
 	
+	def __rtruediv__(self, other):
+		return BinaryOp("/", other, self)
+	
 	def __floordiv__(self, other):
 		return (self / other).__floor__()
+	
+	def __rfloordiv__(self, other):
+		return (other / self).__floor__()
 	
 	def __eq__(self, other):
 		return BinaryOp("==", self, other)
@@ -91,6 +109,10 @@ class Expression():
 	def __pow__(self, other):
 		return UnaryOp("e ^", (self.log() * other))
 	
+	#def __rpow__(self, other):
+	# TODO
+	#	return UnaryOp("e ^", (other.log() * self))
+	
 	def root(self, other):
 		return UnaryOp("e ^", (self.log() / other))
 	
@@ -111,6 +133,9 @@ class Expression():
 		if not is_low_mask:
 			raise Exception("AND can only be used to mask off low bits, for now")
 		return self % (other + 1)
+	
+	def __rand__(self, other):
+		return self.__and__(other)
 	
 	def __getitem__(self, other):
 		return BinaryOp("[]", ensure_expression(other+1).simplified(), self)
